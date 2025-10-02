@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+  <title>Eaglearn - Learning Monitor</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="logo">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="currentColor">
+        <path d="M16 4L6 10v8c0 5.5 3.8 10.7 10 12 6.2-1.3 10-6.5 10-12v-8l-10-6z"/>
+      </svg>
+      <h1>Eaglearn</h1>
+    </div>
+    <div class="status-bar">
+      <span id="connection-status" class="status-indicator">
+        <span class="dot"></span> System Ready
+      </span>
+      <span id="resource-usage" class="resource-monitor">
+        CPU: <span id="cpu-usage">--</span>% | 
+        RAM: <span id="ram-usage">--</span>MB
+      </span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="dashboard">
+    <!-- Engagement Panel -->
+    <section class="panel" id="engagement-panel">
+      <h2>Visual Engagement</h2>
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-label">Gaze Focus</div>
+          <div class="metric-value" id="gaze-focus">--</div>
+          <div class="metric-chart" id="gaze-chart"></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Head Posture</div>
+          <div class="metric-value" id="head-posture">--</div>
+          <div class="posture-indicator">
+            <div class="posture-icon" id="posture-icon"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stress & Fatigue Panel -->
+    <section class="panel" id="stress-panel">
+      <h2>Stress & Fatigue</h2>
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-label">Stress Level</div>
+          <div class="metric-value" id="stress-level">--</div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="stress-bar"></div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Fatigue Score</div>
+          <div class="metric-value" id="fatigue-score">--</div>
+          <div class="progress-bar">
+            <div class="progress-fill fatigue" id="fatigue-bar"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Productivity Panel -->
+    <section class="panel" id="productivity-panel">
+      <h2>Productivity</h2>
+      <div class="metric-grid">
+        <div class="metric-card wide">
+          <div class="metric-label">Session Time</div>
+          <div class="session-timer">
+            <span id="session-time">00:00:00</span>
+            <div class="time-breakdown">
+              <span class="on-task">On-Task: <span id="on-task-time">--</span></span>
+              <span class="break-time">Break: <span id="break-time">--</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="break-pattern" id="break-pattern">
+        <h3>Break Pattern</h3>
+        <div id="pattern-visualization"></div>
+      </div>
+    </section>
+
+    <!-- Video Preview (Optional) -->
+    <section class="panel" id="preview-panel">
+      <h2>Camera Preview</h2>
+      <div class="video-container">
+        <video id="camera-preview" autoplay muted></video>
+        <canvas id="overlay-canvas"></canvas>
+        <button id="toggle-preview" class="btn-toggle">Show Preview</button>
+      </div>
+      <div class="camera-controls">
+        <button id="calibrate-btn" class="btn-action">Calibrate</button>
+        <button id="pause-monitoring" class="btn-action">Pause</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Settings Modal (Hidden by default) -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Settings</h2>
+      <div class="settings-group">
+        <h3>Monitoring</h3>
+        <label>
+          <input type="checkbox" id="enable-gaze" checked> Enable Gaze Tracking
+        </label>
+        <label>
+          <input type="checkbox" id="enable-audio" checked> Enable Audio Analysis
+        </label>
+        <label>
+          <input type="checkbox" id="enable-productivity" checked> Enable Productivity Tracking
+        </label>
+      </div>
+      <div class="settings-group">
+        <h3>Performance</h3>
+        <label>
+          Resolution:
+          <select id="camera-resolution">
+            <option value="720p">720p (Recommended)</option>
+            <option value="480p">480p (Low Resource)</option>
+            <option value="360p">360p (Minimal)</option>
+          </select>
+        </label>
+        <label>
+          Processing FPS:
+          <select id="processing-fps">
+            <option value="30">30 FPS</option>
+            <option value="15">15 FPS (Recommended)</option>
+            <option value="10">10 FPS (Low Resource)</option>
+          </select>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button id="save-settings" class="btn-primary">Save</button>
+        <button id="close-settings" class="btn-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="renderer.js"></script>
+</body>
+</html>

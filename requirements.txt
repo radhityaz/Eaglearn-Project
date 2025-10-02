@@ -1,0 +1,49 @@
+# Eaglearn Backend Requirements
+# Python 3.11.x compatible
+# Optimized for resource-conscious deployment
+
+# Core Computer Vision
+opencv-python-headless==4.8.1.78  # No GUI dependencies, smaller footprint
+mediapipe==0.10.8                 # Lightweight face/pose detection
+onnxruntime==1.16.3               # Fast inference, better than TensorFlow for deployment
+
+# Audio Processing
+librosa==0.10.1                   # Audio feature extraction
+sounddevice==0.4.6                # Low-level audio capture
+scipy==1.11.4                     # Signal processing
+
+# API & Communication
+fastapi==0.104.1                  # Modern async API framework
+uvicorn[standard]==0.24.0        # ASGI server with WebSockets support
+msgpack==1.0.7                    # Binary serialization for IPC
+websockets==12.0                  # WebSocket client/server
+
+# Data Processing
+numpy==1.24.4                     # Numerical computing
+pandas==2.1.4                     # Data manipulation
+pillow==10.1.0                    # Image processing
+
+# Security & Encryption
+pycryptodome==3.19.0              # AES-256 encryption
+python-jose==3.3.0                # JWT tokens
+
+# System Monitoring
+psutil==5.9.6                     # System resource monitoring
+gputil==1.4.0                     # GPU monitoring
+py-cpuinfo==9.0.0                 # CPU information
+
+# Configuration & Utilities
+pydantic==2.5.2                   # Data validation
+python-dotenv==1.0.0              # Environment variables
+loguru==0.7.2                     # Better logging
+apscheduler==3.10.4               # Task scheduling
+
+# Development & Testing
+pytest==7.4.3                     # Testing framework
+pytest-asyncio==0.21.1           # Async test support
+pytest-benchmark==4.0.0          # Performance testing
+black==23.12.0                    # Code formatting
+pylint==3.0.3                     # Code linting
+
+# Optional GPU Acceleration (install if CUDA available)
+# onnxruntime-gpu==1.16.3         # GPU acceleration for ONNX
