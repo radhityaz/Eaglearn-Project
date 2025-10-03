@@ -27,7 +27,7 @@
 
 ```bash
 # Clone repository
-git clone <repository-url>
+git clone https://github.com/radhityaz/Eaglearn-Project
 cd Eaglearn-Project
 
 # Install Python dependencies
