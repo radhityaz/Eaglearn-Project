@@ -24,10 +24,10 @@ let backendProcess;
 function createWindow() {
   // Create the browser window with optimized settings
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 800,
-    minWidth: 1024,
-    minHeight: 600,
+    width: 1600,
+    height: 900,
+    minWidth: 1400,
+    minHeight: 800,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -48,6 +48,7 @@ function createWindow() {
 
   // Show window when ready
   mainWindow.once('ready-to-show', () => {
+    mainWindow.maximize();
     mainWindow.show();
     
     // Set process priority to below normal on Windows

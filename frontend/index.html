@@ -3,151 +3,892 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
-  <title>Eaglearn - Learning Monitor</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' http://localhost:3845 data:;">
+  <title>Dashboard for Desktop and Mobile</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Open Sans', Roboto, sans-serif;
+      background: white;
+      color: black;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    /* Main container - Frame 29 */
+    .dashboard-container {
+      border: 2px solid black;
+      border-radius: 10px;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Top Bar - Frame 1947 */
+    .top-bar {
+      position: absolute;
+      top: -0.45px;
+      left: -0.18px;
+      right: 0.18px;
+      height: 60px;
+      border: 2px solid black;
+      border-bottom: 2px solid black;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      background: white;
+      z-index: 100;
+    }
+
+    .logo-section {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+    }
+
+    .logo-text {
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 22px;
+      color: black;
+      white-space: pre;
+    }
+
+    .user-section {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .user-info {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .username {
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 12px;
+      color: black;
+    }
+
+    .dropdown-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    .locale {
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 12px;
+      color: black;
+    }
+
+    /* Sidebar - Frame 1958 */
+    .sidebar {
+      position: absolute;
+      left: 0.11px;
+      top: 59.55px;
+      bottom: 0.45px;
+      width: 62px;
+      border: 2px solid black;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 20px 8px 20px 8px;
+      background: white;
+      z-index: 90;
+    }
+
+    .sidebar-icon {
+      width: 36px;
+      height: auto;
+    }
+
+    /* Main Content - Frame 1980 */
+    .main-content {
+      position: absolute;
+      left: 62px;
+      top: 59.45px;
+      width: 1378px;
+      height: 840px;
+      background: white;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    /* Top Section with 2 cards - Frame 2077 */
+    .top-section {
+      display: flex;
+      gap: 16px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* Left group with Sales Comparison + Period info - Frame 2027 */
+    .left-card-group {
+      display: flex;
+      gap: 6px;
+      flex: 1;
+      min-width: 0;
+      border-radius: 8px;
+    }
+
+    /* Sales Comparison Card - Frame 1994 */
+    .sales-comparison-card {
+      flex: 1;
+      background: white;
+      border: 2px solid black;
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .card-title {
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 12px;
+      color: black;
+      text-transform: uppercase;
+    }
+
+    .chart-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 17px;
+      min-height: 0;
+    }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .legend-item {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .legend-dot {
+      width: 10.468px;
+      height: 10.468px;
+      border-radius: 50%;
+    }
+
+    .legend-dot.this-year {
+      background: #ccc5b9;
+      border: 1px solid black;
+    }
+
+    .legend-dot.prev-year {
+      background: #e8e8e8;
+      border: 1px solid black;
+    }
+
+    .legend-text {
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 12px;
+      color: black;
+      text-transform: lowercase;
+    }
+
+    /* Chart area */
+    .bar-chart-area {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .y-axis-labels {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px 0;
+      height: 251px;
+      font-family: 'Open Sans', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      color: black;
+      text-align: right;
+    }
+
+    .horizontal-bars {
+      position: relative;
+      height: 251px;
+    }
+
+    .bar-row {
+      position: relative;
+      height: 42.73px;
+      margin-bottom: 49px;
+    }
+
+    .bar {
+      position: absolute;
+      height: 20px;
+      border: 2px solid black;
+      border-radius: 2px;
+    }
+
+    .bar-solid {
+      background: #ccc5b9;
+      border-style: solid;
+    }
+
+    .bar-dashed {
+      background: #e8e8e8;
+      border-style: dashed;
+    }
+
+    .bar.cream { background: #fffcf2; }
+    .bar.orange { background: #fcd7ad; }
+
+    .x-axis-labels {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      color: black;
+    }
+
+    /* Period Info Card - Frame 2036 */
+    .period-info-card {
+      width: 284px;
+      display: flex;
+      align-items: center;
+    }
+
+    .divider-line {
+      width: 10px;
+      height: 20px;
+      background: #ccc;
+      border-radius: 2px;
+    }
+
+    .period-details {
+      flex: 1;
+      background: #e8e8e8;
+      border-radius: 8px;
+      padding: 12px 8px 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .period-title {
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: black;
+    }
+
+    .region-block {
+      background: white;
+      border-radius: 8px;
+      padding: 10px 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .region-header {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 0 8px;
+      height: 24px;
+    }
+
+    .region-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 8px;
+      height: 24px;
+    }
+
+    .region-label {
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 14px;
+      text-transform: capitalize;
+      color: black;
+    }
+
+    .region-value {
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 16px;
+      text-transform: uppercase;
+      color: black;
+    }
+
+    /* Sales Difference Card - Frame 1489 */
+    .sales-diff-card {
+      width: 345px;
+      background: white;
+      border: 2px solid black;
+      border-radius: 10px;
+      padding: 20px 20px 10px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow: hidden;
+    }
+
+    .diff-chart-container {
+      flex: 1;
+      display: flex;
+      gap: 17px;
+      min-height: 0;
+    }
+
+    .y-axis-percent {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 0 0 35px 0;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      color: black;
+      text-align: right;
+    }
+
+    .bar-chart-vertical {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .bars-top {
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 15px;
+    }
+
+    .vertical-bar {
+      width: 20px;
+      border: 2px solid black;
+      border-radius: 2px;
+    }
+
+    .bars-divider {
+      height: 0;
+      border-top: 1px solid black;
+    }
+
+    .bars-bottom {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 0 15px;
+    }
+
+    .region-labels-bottom {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      font-family: 'Open Sans', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      color: black;
+    }
+
+    /* Bottom Section - Historical Chart - Frame 2078 */
+    .bottom-section {
+      display: flex;
+      gap: 6px;
+      flex: 1;
+      min-height: 0;
+      border-radius: 8px;
+    }
+
+    .historical-card {
+      width: 927px;
+      background: white;
+      border: 2px solid black;
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .timeline-chart-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 0;
+    }
+
+    .timeline-legend {
+      display: flex;
+      gap: 15px;
+      justify-content: flex-end;
+    }
+
+    .line-chart-container {
+      position: relative;
+      height: 256px;
+    }
+
+    .line-chart-img {
+      position: absolute;
+      width: 100%;
+      height: auto;
+    }
+
+    .timeline-x-labels {
+      display: flex;
+      justify-content: space-between;
+      padding-left: 40px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      color: black;
+    }
+
+    /* Period Detail Sidebar for bottom */
+    .period-detail-sidebar {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .detail-panel {
+      flex: 1;
+      background: #e8e8e8;
+      border-radius: 8px;
+      padding: 12px 8px 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .data-section {
+      background: white;
+      border-radius: 8px;
+      padding: 6px 0 4px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .data-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 8px 0 4px;
+    }
+
+    .data-label {
+      font-family: 'Open Sans', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      line-height: 21px;
+      color: black;
+    }
+
+    .data-value {
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 16px;
+      text-transform: uppercase;
+      color: black;
+    }
+
+    .data-change {
+      display: flex;
+      align-items: center;
+    }
+
+    .arrow-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    /* Utility classes */
+    .cream-bg { background: #fffcf2; }
+    .gray-bg { background: #e8e8e8; }
+  </style>
 </head>
 <body>
-  <!-- Header -->
-  <header class="app-header">
-    <div class="logo">
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="currentColor">
-        <path d="M16 4L6 10v8c0 5.5 3.8 10.7 10 12 6.2-1.3 10-6.5 10-12v-8l-10-6z"/>
-      </svg>
-      <h1>Eaglearn</h1>
-    </div>
-    <div class="status-bar">
-      <span id="connection-status" class="status-indicator">
-        <span class="dot"></span> System Ready
-      </span>
-      <span id="resource-usage" class="resource-monitor">
-        CPU: <span id="cpu-usage">--</span>% | 
-        RAM: <span id="ram-usage">--</span>MB
-      </span>
-    </div>
-  </header>
-
-  <!-- Main Content -->
-  <main class="dashboard">
-    <!-- Engagement Panel -->
-    <section class="panel" id="engagement-panel">
-      <h2>Visual Engagement</h2>
-      <div class="metric-grid">
-        <div class="metric-card">
-          <div class="metric-label">Gaze Focus</div>
-          <div class="metric-value" id="gaze-focus">--</div>
-          <div class="metric-chart" id="gaze-chart"></div>
+  <div class="dashboard-container">
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div class="logo-section">
+        <img class="logo-icon" src="http://localhost:3845/assets/fb489f72cf9afefd33201c5a0623a24ff105a5ba.svg" alt="Logo">
+        <div class="logo-text">Lorem ipsum</div>
+      </div>
+      <div class="user-section">
+        <div class="user-info">
+          <div class="username">Martina Wolna</div>
+          <img class="dropdown-icon" src="http://localhost:3845/assets/92cb8783bd163abc12d06fdd8ad97ada2b647627.svg" alt="">
         </div>
-        <div class="metric-card">
-          <div class="metric-label">Head Posture</div>
-          <div class="metric-value" id="head-posture">--</div>
-          <div class="posture-indicator">
-            <div class="posture-icon" id="posture-icon"></div>
-          </div>
+        <div class="user-info">
+          <div class="locale">NO</div>
+          <img class="dropdown-icon" src="http://localhost:3845/assets/92cb8783bd163abc12d06fdd8ad97ada2b647627.svg" alt="">
         </div>
       </div>
-    </section>
+    </div>
 
-    <!-- Stress & Fatigue Panel -->
-    <section class="panel" id="stress-panel">
-      <h2>Stress & Fatigue</h2>
-      <div class="metric-grid">
-        <div class="metric-card">
-          <div class="metric-label">Stress Level</div>
-          <div class="metric-value" id="stress-level">--</div>
-          <div class="progress-bar">
-            <div class="progress-fill" id="stress-bar"></div>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <img class="sidebar-icon" src="http://localhost:3845/assets/cba72163e43e9aa2338d27bc78610e5a64907c07.svg" alt="">
+      <img class="sidebar-icon" src="http://localhost:3845/assets/072f33df9a560baf7326d77d1969744e6dc84350.svg" alt="">
+      <img class="sidebar-icon" src="http://localhost:3845/assets/1265f107cae6ec92d6a5399469becd94a0dd1b27.svg" alt="">
+      <img class="sidebar-icon" src="http://localhost:3845/assets/3dfd2bdaf0be1aee16a6ada4300e06f06b420318.svg" alt="">
+      <img class="sidebar-icon" src="http://localhost:3845/assets/9aa8e998247cf9f40526781718d42066352d42b8.svg" alt="">
+      <img class="sidebar-icon" src="http://localhost:3845/assets/48916bd3c7e26424ad13002dc7caea3c12dd02ee.svg" alt="">
+      <img class="sidebar-icon" src="http://localhost:3845/assets/19a897ebb923f034abcf1a1df9c659df3d25db9f.svg" alt="">
+      <img class="sidebar-icon" src="http://localhost:3845/assets/8cb9f3961fb584c5e3e31affc47d71a311971f86.svg" alt="">
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Top Section: Sales Comparison + Sales Difference -->
+      <div class="top-section">
+        <!-- Left: Sales Comparison with Period Info -->
+        <div class="left-card-group">
+          <!-- Sales Comparison Card -->
+          <div class="sales-comparison-card">
+            <div class="card-title">SALES COMPARISON BY REGIONS  2021-2022</div>
+            <div class="chart-container">
+              <div class="legend">
+                <div class="legend-item">
+                  <div class="legend-dot this-year"></div>
+                  <div class="legend-text">This year</div>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-dot prev-year"></div>
+                  <div class="legend-text">Previous year</div>
+                </div>
+              </div>
+              
+              <!-- Bar Chart Placeholder -->
+              <div class="bar-chart-area">
+                <div style="display: flex; gap: 10px;">
+                  <div class="y-axis-labels">
+                    <div>Region 1</div>
+                    <div>Region 1</div>
+                    <div>Region 1</div>
+                  </div>
+                  <div style="flex: 1; position: relative; padding-top: 20px;">
+                    <!-- Horizontal lines -->
+                    <div style="position: absolute; top: 30px; left: 0; right: 0; height: 1px; background: black;"></div>
+                    <div style="position: absolute; top: 125px; left: 0; right: 0; height: 1px; background: black;"></div>
+                    <div style="position: absolute; top: 221px; left: 0; right: 0; height: 1px; background: black;"></div>
+                    
+                    <!-- Bars -->
+                    <div style="position: absolute; top: 8px; left: 0; right: 0;">
+                      <div style="height: 20px; width: 50%; background: #ccc5b9; border: 2px solid black; border-radius: 2px;"></div>
+                      <div style="height: 20px; width: 35%; background: #e8e8e8; border: 2px dashed black; border-radius: 2px; margin-top: 23px;"></div>
+                    </div>
+                    
+                    <div style="position: absolute; top: 103px; left: 0; right: 0;">
+                      <div style="height: 20px; width: 100%; background: #fffcf2; border: 2px solid black; border-radius: 2px;"></div>
+                      <div style="height: 20px; width: 60%; background: #e8e8e8; border: 2px dashed black; border-radius: 2px; margin-top: 23px;"></div>
+                    </div>
+                    
+                    <div style="position: absolute; top: 199px; left: 0; right: 0;">
+                      <div style="height: 20px; width: 41%; background: #fcd7ad; border: 2px solid black; border-radius: 2px;"></div>
+                      <div style="height: 20px; width: 57%; background: #e8e8e8; border: 2px dashed black; border-radius: 2px; margin-top: 23px;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="x-axis-labels">
+                <div>REVENUE</div>
+                <div>0.5 M</div>
+                <div>1 M</div>
+                <div>3.0 M</div>
+                <div>1.5 M</div>
+                <div>2 M</div>
+                <div>2.5 M</div>
+                <div>3.5 M</div>
+                <div>4 M</div>
+                <div>4.5 M</div>
+                <div>5 M</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Period Info Sidebar -->
+          <div class="period-info-card">
+            <div class="divider-line"></div>
+            <div class="period-details">
+              <div class="period-title">PERIOD Jan 2021 to JAN 2022</div>
+              
+              <!-- Region 1 -->
+              <div class="region-block">
+                <div class="region-header">
+                  <div class="legend-dot this-year"></div>
+                  <div class="legend-text">Region 1</div>
+                </div>
+                <div class="region-row">
+                  <div class="region-label">Gross sales 2021</div>
+                  <div class="region-value">5.5 M</div>
+                </div>
+                <div class="region-row">
+                  <div class="region-label">Gross sales 2022</div>
+                  <div class="region-value">3.5 M</div>
+                </div>
+              </div>
+              
+              <!-- Region 2 -->
+              <div class="region-block">
+                <div class="region-header">
+                  <div class="legend-dot prev-year"></div>
+                  <div class="legend-text">Region 2</div>
+                </div>
+                <div class="region-row">
+                  <div class="region-label">Gross sales 2021</div>
+                  <div class="region-value">3.0 M</div>
+                </div>
+                <div class="region-row">
+                  <div class="region-label">Gross sales 2022</div>
+                  <div class="region-value">2.5 M</div>
+                </div>
+              </div>
+              
+              <!-- Region 3 -->
+              <div class="region-block cream-bg">
+                <div class="region-header">
+                  <div class="legend-dot" style="background: #fcd7ad;"></div>
+                  <div class="legend-text">Region 3</div>
+                </div>
+                <div class="region-row">
+                  <div class="region-label">Gross sales 2021</div>
+                  <div class="region-value">2.5 M</div>
+                </div>
+                <div class="region-row">
+                  <div class="region-label">Gross sales 2022</div>
+                  <div class="region-value">3.0 M</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="metric-card">
-          <div class="metric-label">Fatigue Score</div>
-          <div class="metric-value" id="fatigue-score">--</div>
-          <div class="progress-bar">
-            <div class="progress-fill fatigue" id="fatigue-bar"></div>
-          </div>
-        </div>
-      </div>
-    </section>
 
-    <!-- Productivity Panel -->
-    <section class="panel" id="productivity-panel">
-      <h2>Productivity</h2>
-      <div class="metric-grid">
-        <div class="metric-card wide">
-          <div class="metric-label">Session Time</div>
-          <div class="session-timer">
-            <span id="session-time">00:00:00</span>
-            <div class="time-breakdown">
-              <span class="on-task">On-Task: <span id="on-task-time">--</span></span>
-              <span class="break-time">Break: <span id="break-time">--</span></span>
+        <!-- Sales Difference Card -->
+        <div class="sales-diff-card">
+          <div class="card-title">SALES DIFFERENCE COMPARISON (2021-2022)</div>
+          <div class="diff-chart-container">
+            <div class="y-axis-percent">
+              <div>100%</div>
+              <div>80%</div>
+              <div>40%</div>
+              <div>30%</div>
+              <div>20%</div>
+              <div>0%</div>
+              <div>-20%</div>
+              <div>-40%</div>
+              <div>-60%</div>
+              <div>-80%</div>
+              <div>-100%</div>
+            </div>
+            
+            <div class="bar-chart-vertical">
+              <!-- Top bars (positive) -->
+              <div class="bars-top">
+                <div class="vertical-bar" style="height: 57px; background: #ccc5b9;"></div>
+                <div class="vertical-bar" style="height: 120px; background: #fffcf2;"></div>
+                <div class="vertical-bar" style="height: 120px; background: #e8e8e8; opacity: 0; border-style: dashed;"></div>
+              </div>
+              
+              <!-- Center line -->
+              <div class="bars-divider"></div>
+              
+              <!-- Bottom bars (negative) -->
+              <div class="bars-bottom">
+                <div class="vertical-bar" style="height: 40px; background: #e8e8e8; opacity: 0; border-style: dashed;"></div>
+                <div class="vertical-bar" style="height: 120px; background: #e8e8e8; opacity: 0; border-style: dashed;"></div>
+                <div class="vertical-bar" style="height: 40px; background: #e8e8e8; border-style: dashed;"></div>
+              </div>
+              
+              <!-- Region labels -->
+              <div class="region-labels-bottom">
+                <div>Region 1</div>
+                <div>Region 2</div>
+                <div>Region 3</div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="break-pattern" id="break-pattern">
-        <h3>Break Pattern</h3>
-        <div id="pattern-visualization"></div>
-      </div>
-    </section>
 
-    <!-- Video Preview (Optional) -->
-    <section class="panel" id="preview-panel">
-      <h2>Camera Preview</h2>
-      <div class="video-container">
-        <video id="camera-preview" autoplay muted></video>
-        <canvas id="overlay-canvas"></canvas>
-        <button id="toggle-preview" class="btn-toggle">Show Preview</button>
-      </div>
-      <div class="camera-controls">
-        <button id="calibrate-btn" class="btn-action">Calibrate</button>
-        <button id="pause-monitoring" class="btn-action">Pause</button>
-      </div>
-    </section>
-  </main>
+      <!-- Bottom Section: Historical Timeline -->
+      <div class="bottom-section">
+        <!-- Historical Chart -->
+        <div class="historical-card">
+          <div class="card-title">HISTORICAL GROSS SALES TIMELINE</div>
+          <div class="timeline-chart-area">
+            <div class="timeline-legend">
+              <div class="legend-item">
+                <div class="legend-dot this-year"></div>
+                <div class="legend-text">Region 1</div>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot prev-year"></div>
+                <div class="legend-text">Region 2</div>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background: #fcd7ad;"></div>
+                <div class="legend-text">Region 3</div>
+              </div>
+            </div>
+            
+            <!-- Line Chart -->
+            <div class="line-chart-container">
+              <div style="position: absolute; left: 0; top: 0; width: 33px; height: 253px; display: flex; flex-direction: column; justify-content: space-between; font-family: 'Inter'; font-weight: 700; font-size: 12px; text-align: right;">
+                <div>3.5 M</div>
+                <div>3.0 M</div>
+                <div>2.5 M</div>
+                <div>2.0 M</div>
+                <div>1.5 M</div>
+                <div>1 M</div>
+                <div>0.5 M</div>
+              </div>
+              
+              <!-- Chart image placeholder -->
+              <img style="position: absolute; left: 63px; top: 3px; width: 815px; height: 267px;" src="http://localhost:3845/assets/9182bedba7dfd617c71858608bf3445151318f07.svg" alt="Line chart">
+              
+              <!-- Grid lines -->
+              <img style="position: absolute; left: 56px; top: 0; width: 823px; height: 253px;" src="http://localhost:3845/assets/8d8cbf4e044c98ec4722b78a68d26f27ee092983.svg" alt="Grid">
+            </div>
+            
+            <div class="timeline-x-labels">
+              <div>2015</div>
+              <div>2016</div>
+              <div>2017</div>
+              <div>2018</div>
+              <div>2019</div>
+              <div>2020</div>
+              <div>2021</div>
+              <div>2022</div>
+            </div>
+          </div>
+        </div>
 
-  <!-- Settings Modal (Hidden by default) -->
-  <div id="settings-modal" class="modal hidden">
-    <div class="modal-content">
-      <h2>Settings</h2>
-      <div class="settings-group">
-        <h3>Monitoring</h3>
-        <label>
-          <input type="checkbox" id="enable-gaze" checked> Enable Gaze Tracking
-        </label>
-        <label>
-          <input type="checkbox" id="enable-audio" checked> Enable Audio Analysis
-        </label>
-        <label>
-          <input type="checkbox" id="enable-productivity" checked> Enable Productivity Tracking
-        </label>
-      </div>
-      <div class="settings-group">
-        <h3>Performance</h3>
-        <label>
-          Resolution:
-          <select id="camera-resolution">
-            <option value="720p">720p (Recommended)</option>
-            <option value="480p">480p (Low Resource)</option>
-            <option value="360p">360p (Minimal)</option>
-          </select>
-        </label>
-        <label>
-          Processing FPS:
-          <select id="processing-fps">
-            <option value="30">30 FPS</option>
-            <option value="15">15 FPS (Recommended)</option>
-            <option value="10">10 FPS (Low Resource)</option>
-          </select>
-        </label>
-      </div>
-      <div class="modal-actions">
-        <button id="save-settings" class="btn-primary">Save</button>
-        <button id="close-settings" class="btn-secondary">Cancel</button>
+        <!-- Period Detail Sidebar -->
+        <div class="period-detail-sidebar">
+          <div class="divider-line"></div>
+          <div class="detail-panel">
+            <div class="period-title">PERIOD JUn 2019 to JUL 2019</div>
+            
+            <!-- Region 1 Data -->
+            <div class="data-section">
+              <div class="region-header">
+                <div class="legend-dot this-year"></div>
+                <div class="legend-text" style="text-transform: uppercase;">Region 1</div>
+              </div>
+              <div class="data-row">
+                <div class="data-label">Into the store</div>
+                <div class="data-value">23 045</div>
+                <div class="data-change">
+                  <div class="data-value">+11,8 %</div>
+                  <img class="arrow-icon" src="http://localhost:3845/assets/c4fb3cbe17d4486f0e5d5b14af51909c65a1378b.svg" alt="↑">
+                </div>
+              </div>
+              <div class="data-row">
+                <div class="data-label">Out the store</div>
+                <div class="data-value">27 189</div>
+                <div class="data-change">
+                  <div class="data-value">-5,09 %</div>
+                  <img class="arrow-icon" src="http://localhost:3845/assets/c4fb3cbe17d4486f0e5d5b14af51909c65a1378b.svg" alt="↓" style="transform: scaleY(-1);">
+                </div>
+              </div>
+            </div>
+            
+            <!-- Region 2 Data -->
+            <div class="data-section cream-bg">
+              <div class="region-header">
+                <div class="legend-dot prev-year"></div>
+                <div class="legend-text" style="text-transform: uppercase;">Region 2</div>
+              </div>
+              <div class="data-row">
+                <div class="data-label">Into the store</div>
+                <div class="data-value">23 045</div>
+                <div class="data-change">
+                  <div class="data-value">+11,8 %</div>
+                  <img class="arrow-icon" src="http://localhost:3845/assets/c4fb3cbe17d4486f0e5d5b14af51909c65a1378b.svg" alt="↑">
+                </div>
+              </div>
+              <div class="data-row">
+                <div class="data-label">Out the store</div>
+                <div class="data-value">27 189</div>
+                <div class="data-change">
+                  <div class="data-value">-5,09 %</div>
+                  <img class="arrow-icon" src="http://localhost:3845/assets/c4fb3cbe17d4486f0e5d5b14af51909c65a1378b.svg" alt="↓" style="transform: scaleY(-1);">
+                </div>
+              </div>
+            </div>
+            
+            <!-- Region 3 Data -->
+            <div class="data-section cream-bg">
+              <div class="region-header">
+                <div class="legend-dot" style="background: #fcd7ad;"></div>
+                <div class="legend-text" style="text-transform: uppercase;">Region 3</div>
+              </div>
+              <div class="data-row">
+                <div class="data-label">Into the store</div>
+                <div class="data-value">13 789</div>
+                <div class="data-change">
+                  <div class="data-value">-5,09 %</div>
+                  <img class="arrow-icon" src="http://localhost:3845/assets/c4fb3cbe17d4486f0e5d5b14af51909c65a1378b.svg" alt="↓" style="transform: scaleY(-1);">
+                </div>
+              </div>
+              <div class="data-row">
+                <div class="data-label">Out the store</div>
+                <div class="data-value">17 181</div>
+                <div class="data-change">
+                  <div class="data-value">+11,8 %</div>
+                  <img class="arrow-icon" src="http://localhost:3845/assets/c4fb3cbe17d4486f0e5d5b14af51909c65a1378b.svg" alt="↑">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Scripts -->
-  <script src="renderer.js"></script>
+  <script>
+    console.log('Dashboard loaded - Figma HTML conversion');
+  </script>
 </body>
 </html>
