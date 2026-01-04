@@ -4,12 +4,16 @@
 
 **Eaglearn** adalah platform monitoring belajar mandiri yang memadukan computer vision, analisis audio, dan pelacakan produktivitas untuk membantu mahasiswa menjaga fokus, mendeteksi kelelahan, dan mengoptimalkan pola belajar. Sistem beroperasi sepenuhnya offline untuk menjaga privasi pengguna.
 
-### Key Features (Wave 1)
-- **Real-time Analytics**: Gaze estimation, head pose detection, dan stress analysis.
-- **Focus Coach**: Integrasi Pomodoro timer dan smart nudging untuk menjaga fokus.
-- **Productivity Analytics**: On-task tracking dan break pattern identification.
-- **Privacy-First**: 100% offline processing dengan local SQLite database.
-- **Resource-Efficient**: Dioptimalkan untuk laptop mid-range (Acer Nitro 5 AN515-58).
+**NEW:** Simplified, full-Python Flask application with clear state management and quantifiable metrics. See [SIMPLE_APP_README.md](SIMPLE_APP_README.md) for details.
+
+### Key Features
+- **✅ Real-time Analytics**: Head pose (Yaw/Pitch/Roll), facial emotion detection, posture analysis
+- **✅ Clear Metrics**: All metrics quantified (percentages, degrees, ratios)
+- **✅ Live Webcam Feed**: Real-time video with skeleton and emotion overlays
+- **✅ Focus Monitoring**: 0-100% focus percentage with time tracking
+- **✅ Privacy-First**: 100% local processing, no cloud sync
+- **✅ Simple Architecture**: Single app.py + HTML5 frontend
+- **✅ Full Python**: No Electron complexity - Flask backend only
 
 ## 🚀 Quick Start
 
@@ -23,50 +27,54 @@
   - RAM: Minimum 16GB
   - Kamera: 720p webcam
 
-### Installation
+### Installation (Simplified Version)
 
 ```bash
-# Clone repository
+# 1. Clone repository
 git clone https://github.com/radhityaz/Eaglearn-Project
 cd Eaglearn-Project
 
-# 1. Setup Backend
+# 2. Create virtual environment
 python -m venv venv
 venv\Scripts\activate  # Windows
-# atau source venv/bin/activate  # Linux/Mac
+# or source venv/bin/activate  # Linux/Mac
+
+# 3. Install dependencies
 pip install -r requirements.txt
-
-# 2. Setup Frontend
-cd frontend
-npm install
-cd ..
 ```
 
-### Running the Application (Development)
+### Running the Application
 
-Anda perlu menjalankan Backend dan Frontend di terminal terpisah.
-
-**Terminal 1 (Backend):**
+**Single command to run:**
 ```bash
-# Pastikan venv aktif
+python run.py
+```
+
+Then open http://localhost:5000 in your browser.
+
+### Alternative: Legacy FastAPI Backend (if needed)
+
+If you want to run the legacy backend instead:
+```bash
 python start_backend.py
-```
-
-**Terminal 2 (Frontend):**
-```bash
-cd frontend
-npm start
+# Opens at http://localhost:8000
 ```
 
 ## 📁 Project Structure
 
 ```
 Eaglearn-Project/
-├── frontend/           # Electron desktop application
-│   ├── src/           # Source code
-│   ├── public/        # Static assets
-│   └── main.js        # Electron main process
-├── backend/           # Python AI processing
+├── app.py                    # Main Flask application (new simplified version)
+├── run.py                    # Application launcher
+├── templates/
+│   └── index.html           # Web dashboard
+├── requirements.txt         # Python dependencies
+├── backend/                 # Legacy FastAPI backend (optional)
+│   ├── main.py
+│   ├── api/
+│   ├── ml/                  # Machine learning models
+│   ├── db/                  # Database & encryption
+│   └── ws/                  # WebSocket management
 │   ├── core/          # Core modules (vision, audio, tracking)
 │   ├── api/           # FastAPI server
 │   ├── models/        # ML models
