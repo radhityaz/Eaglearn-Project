@@ -580,9 +580,29 @@
         });
 
         socket.on('frame_update', (data) => {
+            console.log('Frame update received:', {
+                hasFrame: !!data.frame,
+                frameLength: data.frame ? data.frame.length : 0,
+                hasState: !!data.state
+            });
+
             if (data.frame) {
-                document.getElementById('webcam-feed').src = 'data:image/jpeg;base64,' + data.frame;
+                const imgElement = document.getElementById('webcam-feed');
+                const dataUrl = 'data:image/jpeg;base64,' + data.frame;
+                imgElement.src = dataUrl;
+
+                // Debug: check if image loads
+                imgElement.onerror = function() {
+                    console.error('Failed to load image! Base64 length:', data.frame.length);
+                    console.error('First 50 chars:', data.frame.substring(0, 50));
+                };
+                imgElement.onload = function() {
+                    console.log('Image loaded successfully!');
+                };
+            } else {
+                console.warn('No frame data received!');
             }
+
             if (data.state) {
                 updateUI(data.state);
             }
