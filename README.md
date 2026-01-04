@@ -5,11 +5,11 @@
 **Eaglearn** adalah platform monitoring belajar mandiri yang memadukan computer vision, analisis audio, dan pelacakan produktivitas untuk membantu mahasiswa menjaga fokus, mendeteksi kelelahan, dan mengoptimalkan pola belajar. Sistem beroperasi sepenuhnya offline untuk menjaga privasi pengguna.
 
 ### Key Features (Wave 1)
-- **Visual Engagement Tracking**: Real-time gaze estimation dan head pose detection
-- **Stress & Fatigue Detection**: Audio stress analysis dan micro-expression recognition
-- **Productivity Analytics**: On-task tracking dan break pattern identification
-- **Privacy-First**: 100% offline processing dengan enkripsi AES-256
-- **Resource-Efficient**: Dioptimalkan untuk laptop mid-range (Acer Nitro 5 AN515-58)
+- **Real-time Analytics**: Gaze estimation, head pose detection, dan stress analysis.
+- **Focus Coach**: Integrasi Pomodoro timer dan smart nudging untuk menjaga fokus.
+- **Productivity Analytics**: On-task tracking dan break pattern identification.
+- **Privacy-First**: 100% offline processing dengan local SQLite database.
+- **Resource-Efficient**: Dioptimalkan untuk laptop mid-range (Acer Nitro 5 AN515-58).
 
 ## 🚀 Quick Start
 
@@ -17,7 +17,7 @@
 - **OS**: Windows 11 23H2 atau Ubuntu 22.04 LTS
 - **Python**: 3.11.x
 - **Node.js**: 18.x atau lebih baru
-- **Hardware**: 
+- **Hardware**:
   - CPU: Intel i5 atau setara
   - GPU: NVIDIA GTX 1650 atau lebih baik (opsional tapi direkomendasikan)
   - RAM: Minimum 16GB
@@ -30,19 +30,32 @@
 git clone https://github.com/radhityaz/Eaglearn-Project
 cd Eaglearn-Project
 
-# Install Python dependencies
+# 1. Setup Backend
 python -m venv venv
 venv\Scripts\activate  # Windows
-# atau
-source venv/bin/activate  # Linux/Mac
-
+# atau source venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
 
-# Install Node.js dependencies
+# 2. Setup Frontend
+cd frontend
 npm install
+cd ..
+```
 
-# Run development mode
-npm run dev
+### Running the Application (Development)
+
+Anda perlu menjalankan Backend dan Frontend di terminal terpisah.
+
+**Terminal 1 (Backend):**
+```bash
+# Pastikan venv aktif
+python start_backend.py
+```
+
+**Terminal 2 (Frontend):**
+```bash
+cd frontend
+npm start
 ```
 
 ## 📁 Project Structure
@@ -75,14 +88,25 @@ Project ini mengikuti prinsip **Evidence-Driven Prototyping**:
 
 ## 🧪 Testing
 
+### Unit Testing
 ```bash
-# Run Python tests
-pytest tests/backend/
+# Backend Tests (Pytest)
+pytest
 
-# Run JavaScript tests
+# Frontend Tests (Jest)
+cd frontend
 npm test
+```
 
-# Run performance benchmarks
+### End-to-End Testing
+```bash
+# Menjalankan E2E tests dengan Playwright
+cd frontend
+npm run test:e2e
+```
+
+### Performance Benchmarks
+```bash
 python benchmarks/run_all.py
 ```
 

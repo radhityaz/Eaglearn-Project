@@ -83,6 +83,10 @@ jspm_packages/
 coverage/
 *.lcov
 .nyc_output
+test-results/
+playwright-report/
+frontend/test-results/
+frontend/playwright-report/
 
 # Production builds
 /out/

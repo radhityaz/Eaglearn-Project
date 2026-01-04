@@ -3,8 +3,31 @@
  * Optimized for low resource consumption
  */
 
-const { app, BrowserWindow, ipcMain, Menu } = require('electron');
+if (process.env.ELECTRON_RUN_AS_NODE && !process.env.PLAYWRIGHT_TEST) {
+  console.warn('[main] ELECTRON_RUN_AS_NODE detected, restarting...');
+  const { spawn } = require('child_process');
+  const electronPath = require('electron');
+  const env = { ...process.env };
+  delete env.ELECTRON_RUN_AS_NODE;
+  
+  const child = spawn(electronPath, ['.', ...process.argv.slice(2)], {
+    cwd: __dirname,
+    env,
+    stdio: 'inherit'
+  });
+  
+  child.on('close', (code) => process.exit(code));
+  return;
+}
+
+const electron = require('electron');
+const { app, BrowserWindow, ipcMain, Menu } = electron;
 const path = require('path');
+
+// DEBUG: Log startup args
+console.log('[main] Startup args:', process.argv);
+console.log('[main] Environment:', process.env);
+
 const isDev = process.argv.includes('--dev');
 
 // Resource optimization settings
@@ -64,7 +87,7 @@ function createWindow() {
     
     // Enable live reload
     require('electron-reload')(__dirname, {
-      electron: path.join(__dirname, '..', 'node_modules', '.bin', 'electron'),
+      electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
       hardResetMethod: 'exit'
     });
   }
@@ -141,16 +164,16 @@ function setupMenu() {
 function startBackend() {
   const { spawn } = require('child_process');
   const backendPath = path.join(__dirname, '..', 'backend', 'main.py');
+  const projectRoot = path.join(__dirname, '..');
   
   // Start Python backend with resource limits
   backendProcess = spawn('python', [
     '-u', // Unbuffered output
-    backendPath,
-    '--max-cpu', '40',
-    '--max-gpu', '50'
+    backendPath
   ], {
     env: {
       ...process.env,
+      PYTHONPATH: projectRoot, // Set PYTHONPATH to project root
       PYTHONUNBUFFERED: '1',
       OMP_NUM_THREADS: '2', // Limit OpenMP threads
       MKL_NUM_THREADS: '2', // Limit MKL threads

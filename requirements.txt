@@ -3,7 +3,7 @@
 # Optimized for resource-conscious deployment
 
 # Core Computer Vision
-opencv-python-headless==4.8.1.78  # No GUI dependencies, smaller footprint
+opencv-python==4.8.1.78           # For webcam capture and image processing
 mediapipe==0.10.8                 # Lightweight face/pose detection
 onnxruntime==1.16.3               # Fast inference, better than TensorFlow for deployment
 
@@ -13,15 +13,17 @@ sounddevice==0.4.6                # Low-level audio capture
 scipy==1.11.4                     # Signal processing
 
 # API & Communication
-fastapi==0.104.1                  # Modern async API framework
-uvicorn[standard]==0.24.0        # ASGI server with WebSockets support
-msgpack==1.0.7                    # Binary serialization for IPC
-websockets==12.0                  # WebSocket client/server
+flask==3.0.0                      # Lightweight web framework
+flask-cors==4.0.0                 # CORS support for Flask
+flask-socketio==5.3.5             # WebSocket support for Flask
+python-socketio==5.10.0           # SocketIO protocol support
+python-engineio==4.8.0            # Engine for WebSocket
 
 # Data Processing
-numpy==1.24.4                     # Numerical computing
+numpy<2.0,>=1.24.0                # Numerical computing (pinned to 1.x for ML compatibility)
 pandas==2.1.4                     # Data manipulation
 pillow==10.1.0                    # Image processing
+SQLAlchemy==2.0.23                # ORM + database toolkit
 
 # Security & Encryption
 pycryptodome==3.19.0              # AES-256 encryption
@@ -42,6 +44,7 @@ apscheduler==3.10.4               # Task scheduling
 pytest==7.4.3                     # Testing framework
 pytest-asyncio==0.21.1           # Async test support
 pytest-benchmark==4.0.0          # Performance testing
+httpx==0.24.1                    # Async HTTP client for integration tests
 black==23.12.0                    # Code formatting
 pylint==3.0.3                     # Code linting
 

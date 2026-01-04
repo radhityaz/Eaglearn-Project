@@ -1,0 +1,114 @@
+{
+  "summary": {
+    "total_files": 11030,
+    "total_code_files": 8684,
+    "total_size_bytes": 729472912,
+    "approx_total_loc": 5105474
+  },
+  "per_directory": {
+    "backend": {
+      "files": 1,
+      "code_files": 1,
+      "size_bytes": 7127,
+      "approx_loc": 194
+    },
+    "frontend": {
+      "files": 10964,
+      "code_files": 8649,
+      "size_bytes": 729137292,
+      "approx_loc": 5098786
+    },
+    "prototypes": {
+      "files": 21,
+      "code_files": 8,
+      "size_bytes": 73649,
+      "approx_loc": 1409
+    },
+    "eaglearn-clone": {
+      "files": 19,
+      "code_files": 6,
+      "size_bytes": 23635,
+      "approx_loc": 502
+    },
+    "copy/focus-coach": {
+      "files": 12,
+      "code_files": 7,
+      "size_bytes": 47815,
+      "approx_loc": 828
+    },
+    "spec": {
+      "files": 12,
+      "code_files": 12,
+      "size_bytes": 172961,
+      "approx_loc": 3635
+    },
+    "docs": {
+      "files": 0,
+      "code_files": 0,
+      "size_bytes": 0,
+      "approx_loc": 0
+    },
+    "tests": {
+      "files": 0,
+      "code_files": 0,
+      "size_bytes": 0,
+      "approx_loc": 0
+    },
+    "benchmarks": {
+      "files": 0,
+      "code_files": 0,
+      "size_bytes": 0,
+      "approx_loc": 0
+    },
+    "models": {
+      "files": 0,
+      "code_files": 0,
+      "size_bytes": 0,
+      "approx_loc": 0
+    },
+    "proto": {
+      "files": 1,
+      "code_files": 1,
+      "size_bytes": 10433,
+      "approx_loc": 120
+    }
+  },
+  "extension_histogram": {
+    ".jsx": {
+      "file_count": 0,
+      "approx_loc": 0
+    },
+    ".tsx": {
+      "file_count": 0,
+      "approx_loc": 0
+    },
+    ".md": {
+      "file_count": 689,
+      "approx_loc": 80510
+    },
+    ".html": {
+      "file_count": 9,
+      "approx_loc": 272193
+    },
+    ".css": {
+      "file_count": 9,
+      "approx_loc": 2501
+    },
+    ".py": {
+      "file_count": 22,
+      "approx_loc": 6718
+    },
+    ".ts": {
+      "file_count": 1583,
+      "approx_loc": 227967
+    },
+    ".js": {
+      "file_count": 5575,
+      "approx_loc": 839450
+    },
+    ".json": {
+      "file_count": 797,
+      "approx_loc": 101788
+    }
+  }
+}
