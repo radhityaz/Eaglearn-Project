@@ -251,10 +251,10 @@ class WebcamProcessor:
         """Extract facial landmarks for emotion detection"""
         # Simple eye aspect ratio calculation
         # Using landmarks indices for left and right eyes
-        left_eye_top = landmarks[159].y
-        left_eye_bottom = landmarks[145].y
-        left_eye_left = landmarks[33].x
-        left_eye_right = landmarks[133].x
+        left_eye_top = landmarks.landmark[159].y
+        left_eye_bottom = landmarks.landmark[145].y
+        left_eye_left = landmarks.landmark[33].x
+        left_eye_right = landmarks.landmark[133].x
 
         eye_vertical = abs(left_eye_top - left_eye_bottom)
         eye_horizontal = abs(left_eye_left - left_eye_right)
