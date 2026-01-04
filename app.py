@@ -241,7 +241,7 @@ class WebcamProcessor:
                 socketio.emit('frame_update', {
                     'frame': frame_b64,
                     'state': self.state.to_dict()
-                }, broadcast=True)
+                })
 
                 # Small sleep to prevent CPU spinning
                 time.sleep(0.01)
