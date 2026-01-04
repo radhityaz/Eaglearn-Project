@@ -242,6 +242,25 @@ class WebcamProcessor:
                 # Process face mesh for emotions
                 face_results = self.face_mesh.process(rgb_frame)
                 if face_results.multi_face_landmarks:
+                    # Draw face mesh
+                    mp_drawing = mp.solutions.drawing_utils
+                    mp_drawing_styles = mp.solutions.drawing_styles
+                    for face_landmarks in face_results.multi_face_landmarks:
+                        mp_drawing.draw_landmarks(
+                            image=bgr_frame,
+                            landmark_list=face_landmarks,
+                            connections=self.mp_face_mesh.FACEMESH_TESSELATION,
+                            landmark_drawing_spec=None,
+                            connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_tesselation_style()
+                        )
+                        mp_drawing.draw_landmarks(
+                            image=bgr_frame,
+                            landmark_list=face_landmarks,
+                            connections=self.mp_face_mesh.FACEMESH_CONTOURS,
+                            landmark_drawing_spec=None,
+                            connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_contours_style()
+                        )
+
                     self._process_face_landmarks(face_results.multi_face_landmarks[0])
         else:
             with self.state.lock:
@@ -280,16 +299,27 @@ class WebcamProcessor:
         """Process body pose"""
         results = self.pose.process(rgb_frame)
 
+        # Draw pose landmarks on frame
+        if results.pose_landmarks:
+            mp_drawing = mp.solutions.drawing_utils
+            mp_drawing_styles = mp.solutions.drawing_styles
+            mp_drawing.draw_landmarks(
+                bgr_frame,
+                results.pose_landmarks,
+                self.mp_pose.POSE_CONNECTIONS,
+                landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style()
+            )
+
         if results.pose_landmarks:
             with self.state.lock:
                 self.state.body_detected = True
-                self.state.pose_confidence = results.pose_landmarks[0].visibility if results.pose_landmarks else 0
+                self.state.pose_confidence = results.pose_landmarks.landmark[0].visibility if results.pose_landmarks else 0
 
                 # Calculate posture score based on head and shoulder positions
                 # This is simplified - in production you'd use more sophisticated metrics
-                head = results.pose_landmarks[0]
-                left_shoulder = results.pose_landmarks[11]
-                right_shoulder = results.pose_landmarks[12]
+                head = results.pose_landmarks.landmark[0]
+                left_shoulder = results.pose_landmarks.landmark[11]
+                right_shoulder = results.pose_landmarks.landmark[12]
 
                 # If head is centered between shoulders, good posture
                 shoulder_center_x = (left_shoulder.x + right_shoulder.x) / 2
