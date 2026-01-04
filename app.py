@@ -157,10 +157,29 @@ class WebcamProcessor:
         if self.running:
             return
 
-        self.cap = cv2.VideoCapture(0)
+        # Try DirectShow backend first (more reliable on Windows)
+        self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        if not self.cap.isOpened():
+            logger.warning("Cannot open webcam with DirectShow, trying default...")
+            self.cap = cv2.VideoCapture(0)
+
         if not self.cap.isOpened():
             logger.error("Cannot open webcam")
             return False
+
+        # Set camera properties for better performance
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        self.cap.set(cv2.CAP_PROP_FPS, 30)
+
+        # Test if we can actually read a frame
+        ret, test_frame = self.cap.read()
+        if not ret or test_frame is None:
+            logger.error("Webcam opened but cannot read frames")
+            self.cap.release()
+            return False
+
+        logger.info(f"Webcam opened: {test_frame.shape}")
 
         self.running = True
         self.thread = Thread(target=self._process_loop, daemon=True)
