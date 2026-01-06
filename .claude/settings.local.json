@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip show:*)",
+      "Bash(python:*)",
+      "Bash(timeout:*)",
+      "Bash(curl:*)",
+      "Bash(pip install:*)",
+      "Bash(findstr:*)",
+      "Bash(tree:*)",
+      "WebSearch",
+      "Bash(wmic:*)",
+      "Bash(git clone:*)",
+      "Bash(ping:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)"
+    ]
+  },
+  "outputStyle": "Explanatory"
+}

@@ -1,52 +1,64 @@
-# Eaglearn Backend Requirements
+# Eaglearn Requirements
 # Python 3.11.x compatible
-# Optimized for resource-conscious deployment
 
-# Core Computer Vision
-opencv-python==4.8.1.78           # For webcam capture and image processing
-mediapipe==0.10.8                 # Lightweight face/pose detection
-onnxruntime==1.16.3               # Fast inference, better than TensorFlow for deployment
+# ============================================================================
+# CORE DEPENDENCIES
+# ============================================================================
 
-# Audio Processing
-librosa==0.10.1                   # Audio feature extraction
-sounddevice==0.4.6                # Low-level audio capture
-scipy==1.11.4                     # Signal processing
-
-# API & Communication
+# Web Framework
 flask==3.0.0                      # Lightweight web framework
-flask-cors==4.0.0                 # CORS support for Flask
-flask-socketio==5.3.5             # WebSocket support for Flask
-python-socketio==5.10.0           # SocketIO protocol support
-python-engineio==4.8.0            # Engine for WebSocket
+flask-cors==4.0.0                 # CORS support
+flask-socketio==5.3.5             # WebSocket support
+python-socketio==5.10.0           # SocketIO protocol
+
+# Computer Vision
+opencv-python==4.8.1.78           # Webcam capture & image processing
+mediapipe==0.10.8                 # Face & pose detection
+pillow==10.1.0                    # Image processing
 
 # Data Processing
-numpy<2.0,>=1.24.0                # Numerical computing (pinned to 1.x for ML compatibility)
-pandas==2.1.4                     # Data manipulation
-pillow==10.1.0                    # Image processing
-SQLAlchemy==2.0.23                # ORM + database toolkit
+numpy<2.0,>=1.24.0                # Numerical computing (pinned to 1.x)
 
-# Security & Encryption
-pycryptodome==3.19.0              # AES-256 encryption
-python-jose==3.3.0                # JWT tokens
-
-# System Monitoring
-psutil==5.9.6                     # System resource monitoring
-gputil==1.4.0                     # GPU monitoring
-py-cpuinfo==9.0.0                 # CPU information
-
-# Configuration & Utilities
-pydantic==2.5.2                   # Data validation
+# Configuration
+pyyaml==6.0.1                     # YAML config file support
 python-dotenv==1.0.0              # Environment variables
-loguru==0.7.2                     # Better logging
-apscheduler==3.10.4               # Task scheduling
 
-# Development & Testing
-pytest==7.4.3                     # Testing framework
-pytest-asyncio==0.21.1           # Async test support
-pytest-benchmark==4.0.0          # Performance testing
-httpx==0.24.1                    # Async HTTP client for integration tests
-black==23.12.0                    # Code formatting
-pylint==3.0.3                     # Code linting
+# ============================================================================
+# EMOTION DETECTION
+# ============================================================================
 
-# Optional GPU Acceleration (install if CUDA available)
-# onnxruntime-gpu==1.16.3         # GPU acceleration for ONNX
+# DeepFace (Primary - 93% accurate)
+deepface==0.0.79                  # Emotion detection
+tf-keras==2.15.0                  # Required for DeepFace
+tensorflow==2.15.0                # DeepFace backend (CPU version)
+
+# EfficientNet (Fallback - 87% accurate)
+torch>=2.0.0                      # PyTorch (EfficientNet)
+torchvision>=0.15.0               # PyTorch vision models
+
+# Optional: POSTER++ (SOTA 2024 - 90% accurate)
+# See: setup_poster++.md for installation
+
+# ============================================================================
+# OPTIONAL DEPENDENCIES
+# ============================================================================
+
+# GPU Acceleration (uncomment if CUDA available)
+# onnxruntime-gpu==1.16.3         # GPU acceleration for ONNX models
+# tensorflow-gpu==2.15.0          # GPU acceleration for TensorFlow
+
+# Development Tools (install separately)
+# pytest==7.4.3                   # Testing
+# black==23.12.0                  # Code formatting
+# pylint==3.0.3                   # Code linting
+
+# ============================================================================
+# NOTES
+# ============================================================================
+
+# 1. Audio processing (librosa, sounddevice) removed - not currently used
+# 2. Database (SQLAlchemy) removed - not needed for current version
+# 3. Security (pycryptodome, python-jose) removed - not needed for local deployment
+# 4. System monitoring (psutil, gputil) removed - not critical
+# 5. Development tools moved to optional section
+

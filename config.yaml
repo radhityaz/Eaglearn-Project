@@ -1,0 +1,168 @@
+# Eaglearn MediaPipe Configuration
+# All settings are tunable for performance/accuracy trade-offs
+
+mediapipe:
+  # Model Selection
+  model_complexity: 0  # 0=Lite (fastest), 1=Full, 2=Heavy
+
+  # Pose Detection Settings
+  pose:
+    static_image_mode: false
+    model_complexity: 0  # Lite model
+    smooth_landmarks: false  # Disable for speed
+    min_detection_confidence: 0.5
+    min_tracking_confidence: 0.5
+    enable_segmentation: false
+
+  # Face Detection Settings
+  face_detection:
+    model_selection: 0  # 0=short range (faster), 1=full range
+    min_detection_confidence: 0.3  # Lower for speed
+
+  # Face Mesh Settings
+  face_mesh:
+    static_image_mode: false
+    max_num_faces: 1
+    refine_landmarks: true  # Enable iris tracking
+    min_detection_confidence: 0.3
+    min_tracking_confidence: 0.3
+
+# Performance Tuning
+performance:
+  # Frame Processing
+  frame_skip_mode: adaptive  # 'fixed' | 'adaptive'
+  frame_skip_base: 3  # Process every Nth frame (fixed mode)
+
+  # Adaptive Frame Skipping (when mode=adaptive)
+  adaptive_quality:
+    enabled: true
+    target_fps: 25  # Target FPS to maintain
+    min_skip: 1  # Minimum frames to skip
+    max_skip: 7  # Maximum frames to skip
+    fps_low_threshold: 20  # When to increase skipping
+    fps_high_threshold: 30  # When to decrease skipping
+
+  # GPU Acceleration
+  gpu_acceleration:
+    enabled: true
+    fallback_to_cpu: true  # Fallback if GPU not available
+
+  # Selective Processing (optimization)
+  selective_face_mesh:
+    enabled: true
+    stability_threshold: 0.8  # Only process when face stable
+    confidence_threshold: 0.7  # Minimum confidence
+
+# Camera Settings
+camera:
+  width: 640
+  height: 480
+  fps: 30
+  backend: dshow  # 'dshow' (Windows), 'default', 'v4l2' (Linux)
+
+# Focus Algorithm Thresholds
+focus:
+  # Detection Thresholds
+  head_yaw_threshold: 10  # Degrees
+  head_pitch_threshold: 8  # Degrees
+  eye_aspect_ratio_threshold: 0.2  # Eyes open
+  posture_good_threshold: 80  # Percentage
+  posture_acceptable_threshold: 60  # Percentage
+
+  # Score Weights (must sum to 100)
+  weights:
+    face_detection: 30
+    eye_aspect_ratio: 20
+    head_pose: 25
+    body_posture: 15
+    mouth_aspect_ratio: 10
+
+  # Status Thresholds
+  focused_threshold: 80  # Score >= 80% = focused
+  distracted_threshold: 50  # Score < 50% = drowsy
+
+# Eye Tracking Settings
+eye_tracking:
+  screen_width: 1920
+  screen_height: 1080
+  gaze_scale_x: 800  # Pixels per gaze unit
+  gaze_scale_y: 450  # Pixels per gaze unit
+  sensitivity_threshold: 0.18  # Lower = more sensitive
+
+  # Gaze Smoothing (reduce jitter)
+  enable_smoothing: true
+  smoothing_window: 5  # Number of frames to average (3-7 recommended)
+  smoothing_method: moving_average  # 'moving_average' | 'exponential'
+
+# Emotion Detection Thresholds
+emotion:
+  # Minimum confidence for emotion detection
+  min_confidence: 0.3
+
+  # Yawning Detection
+  yawning_mar_threshold: 0.6
+  yawning_duration_threshold: 0.5  # Seconds
+
+  # Blink Detection
+  blink_ear_threshold: 0.21  # Increased from 0.18 (more strict)
+  blink_debounce_time: 0.20  # Increased from 0.15 (prevent double-count)
+  normal_blink_rate_min: 12  # Decreased from 15 (wider range)
+  normal_blink_rate_max: 25  # Increased from 20 (wider range)
+
+  # Stress Detection
+  stress_high_threshold: 0.7
+  stress_medium_threshold: 0.5
+
+  # Angry Detection (STRICT thresholds to reduce false positives)
+  angry_frown_threshold: 0.012  # Increased from 0.010 (stricter)
+  angry_eyebrow_furrow_threshold: 0.08  # Max furrow distance
+  angry_lip_tension_threshold: 0.60  # Increased from 0.55 (stricter)
+  angry_ear_min: 0.12  # Eyes must be narrowed (lowered from 0.15)
+  angry_ear_max: 0.18  # But not closed
+
+  # Confusion Detection
+  eyebrow_raise_threshold: 0.08
+  head_tilt_threshold: 8  # Degrees
+
+# Distraction Detection
+distractions:
+  head_turn_threshold: 20  # Degrees
+  head_pitch_threshold: 15  # Degrees
+  posture_poor_threshold: 40  # Percentage
+  stress_high_threshold: 0.7
+  confusion_high_threshold: 0.7
+
+# Calibration Settings
+calibration:
+  enabled: true
+  auto_save: true
+  calibration_file: user_calibration.json
+  default_calibration:
+    gaze_offset_x: 0
+    gaze_offset_y: 0
+    scale_factor: 1.0
+
+# Privacy Settings
+privacy:
+  allow_pause: true
+  local_processing_only: true  # No cloud upload
+  retain_images: false  # Don't save frames
+
+# Logging Settings
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR
+  log_focus_analysis: true  # Log detailed focus analysis
+  log_interval: 30  # Frames between logs
+
+# UI Settings
+ui:
+  show_frame_count: true
+  show_fps: true
+  show_focus_percentage: true
+  show_emotion: true
+  show_posture: true
+  visual_feedback:
+    enabled: true
+    show_gaze_point: true
+    show_face_mesh: false  # Disabled for performance
+    show_skeleton: false  # Disabled for performance
