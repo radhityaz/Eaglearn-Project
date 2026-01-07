@@ -42,10 +42,19 @@ performance:
     fps_low_threshold: 20  # When to increase skipping
     fps_high_threshold: 30  # When to decrease skipping
 
-  # GPU Acceleration
+  # GPU Acceleration (OpenCV CUDA + TensorFlow GPU)
   gpu_acceleration:
     enabled: true
     fallback_to_cpu: true  # Fallback if GPU not available
+
+    # TensorFlow GPU Settings (for DeepFace emotion detection)
+    tensorflow:
+      # Enable memory growth (prevent OOM errors)
+      memory_growth: true
+      # Optional: Limit GPU memory (MB) - uncomment to enable
+      # memory_limit: 2048  # 2GB limit
+      # Log device placement for debugging
+      log_device_placement: false
 
   # Selective Processing (optimization)
   selective_face_mesh:

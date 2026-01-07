@@ -8,9 +8,51 @@ import logging
 import numpy as np
 import cv2
 from typing import Dict, Optional
+import os
 
 logger = logging.getLogger(__name__)
 
+# ============================================================================
+# TENSORFLOW GPU OPTIMIZATION
+# ============================================================================
+# Configure TensorFlow GPU before importing DeepFace
+TF_GPU_AVAILABLE = False
+try:
+    import tensorflow as tf
+
+    # Suppress TensorFlow warnings
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 0=all, 1=INFO, 2=WARNING, 3=ERROR
+
+    # Check for GPU availability
+    physical_devices = tf.config.list_physical_devices('GPU')
+    if physical_devices:
+        TF_GPU_AVAILABLE = True
+        logger.info(f"🚀 TensorFlow GPU detected: {len(physical_devices)} device(s)")
+
+        # Configure GPU memory growth (prevent OOM errors)
+        for gpu in physical_devices:
+            try:
+                tf.config.experimental.set_memory_growth(gpu, True)
+                logger.info(f"✅ GPU memory growth enabled for: {gpu.name}")
+            except RuntimeError as e:
+                logger.warning(f"⚠️ Could not set memory growth: {e}")
+
+        # Optional: Limit GPU memory allocation (uncomment if needed)
+        # tf.config.set_logical_device_configuration(
+        #     physical_devices[0],
+        #     [tf.config.LogicalDeviceConfiguration(memory_limit=2048)]  # 2GB limit
+        # )
+    else:
+        logger.info("⚠️ No TensorFlow GPU detected, using CPU")
+
+except ImportError:
+    logger.warning("⚠️ TensorFlow not installed, GPU acceleration unavailable")
+except Exception as e:
+    logger.warning(f"⚠️ TensorFlow GPU configuration error: {e}")
+
+# ============================================================================
+# DEEPFACE IMPORT (after TensorFlow GPU config)
+# ============================================================================
 try:
     from deepface import DeepFace
     DEEPFACE_AVAILABLE = True
@@ -35,11 +77,15 @@ class DeepFaceEmotionDetector:
 
         Args:
             config: Config object from config_loader
-            gpu_enabled: Whether GPU acceleration is available
+            gpu_enabled: Whether CUDA GPU is available (for OpenCV operations)
         """
         self.config = config
         self.available = DEEPFACE_AVAILABLE
-        self.gpu_enabled = gpu_enabled
+
+        # Use TensorFlow GPU detection (more reliable than CUDA check)
+        # gpu_enabled parameter is for OpenCV CUDA, TF_GPU_AVAILABLE is for TensorFlow
+        self.gpu_enabled = TF_GPU_AVAILABLE
+        self.cuda_enabled = gpu_enabled  # Keep for reference
 
         # DeepFace settings - OPTIMIZED for real-time
         self.actions = ['emotion']
@@ -52,10 +98,10 @@ class DeepFaceEmotionDetector:
         # 'retinaface' = most accurate (~95%), slow on CPU but good for GPU
         if self.gpu_enabled:
             self.detector_backend = 'retinaface'  # Best accuracy with GPU
-            logger.info("🚀 Using RetinaFace backend (GPU accelerated)")
+            logger.info("🚀 Using RetinaFace backend (TensorFlow GPU accelerated)")
         else:
             self.detector_backend = 'ssd'  # Best balance for CPU-only systems
-            logger.info("⚡ Using SSD backend (optimized for CPU)")
+            logger.info("⚡ Using SSD backend (CPU optimized)")
 
         # Try different emotion models (in order of preference):
         # - 'Emotion' (default) = VGG-Face based
@@ -63,14 +109,17 @@ class DeepFaceEmotionDetector:
         self.emotion_model = 'Emotion'
 
         # Confidence threshold to reduce false positives
-        # Lowered from 0.4 to 0.25 to catch more emotions (RTX 3050 can handle it)
-        self.confidence_threshold = 0.25  # 25% minimum confidence (more sensitive)
+        # Lower threshold when GPU available (can handle more processing)
+        if self.gpu_enabled:
+            self.confidence_threshold = 0.20  # More sensitive with GPU
+        else:
+            self.confidence_threshold = 0.25  # Standard for CPU
 
         # Model will be loaded on first use (lazy loading)
         self.model_loaded = False
 
         logger.info("✅ DeepFaceEmotionDetector initialized")
-        logger.info(f"🔧 Backend: {self.detector_backend} | GPU: {self.gpu_enabled}")
+        logger.info(f"🔧 Backend: {self.detector_backend} | TensorFlow GPU: {self.gpu_enabled}")
         logger.info(f"🔧 Confidence Threshold: {self.confidence_threshold}")
 
     def detect_emotion(self, frame: np.ndarray, face_bbox: Optional[tuple] = None) -> Dict:

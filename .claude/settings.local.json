@@ -15,7 +15,10 @@
       "Bash(netstat:*)",
       "Bash(taskkill:*)",
       "Bash(dir:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git mv:*)"
     ]
   },
   "outputStyle": "Explanatory"
