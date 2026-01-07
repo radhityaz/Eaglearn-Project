@@ -29,26 +29,33 @@ class DeepFaceEmotionDetector:
     Emotions: happy, sad, angry, fearful, disgust, neutral, surprise
     """
 
-    def __init__(self, config):
+    def __init__(self, config, gpu_enabled=False):
         """
         Initialize DeepFace emotion detector
 
         Args:
             config: Config object from config_loader
+            gpu_enabled: Whether GPU acceleration is available
         """
         self.config = config
         self.available = DEEPFACE_AVAILABLE
+        self.gpu_enabled = gpu_enabled
 
         # DeepFace settings - OPTIMIZED for real-time
         self.actions = ['emotion']
         self.enforce_detection = False  # Don't enforce face detection (we do it already)
 
-        # IMPROVED: Balance speed and accuracy
-        # 'opencv' = fastest, but less accurate (used before, user complained)
-        # 'mtcnn' = moderate speed, better accuracy
-        # 'retinaface' = most accurate, good for GPU (RTX 3050)
-        # 'ssd' = fast and accurate, good balance
-        self.detector_backend = 'retinaface'  # Use RetinaFace for better accuracy (RTX 3050 can handle it)
+        # IMPROVED: Adaptive backend selection based on GPU availability
+        # 'opencv' = fastest, but less accurate (~70%)
+        # 'ssd' = fast and accurate (~85%), good for CPU
+        # 'mtcnn' = moderate speed, better accuracy (~90%)
+        # 'retinaface' = most accurate (~95%), slow on CPU but good for GPU
+        if self.gpu_enabled:
+            self.detector_backend = 'retinaface'  # Best accuracy with GPU
+            logger.info("🚀 Using RetinaFace backend (GPU accelerated)")
+        else:
+            self.detector_backend = 'ssd'  # Best balance for CPU-only systems
+            logger.info("⚡ Using SSD backend (optimized for CPU)")
 
         # Try different emotion models (in order of preference):
         # - 'Emotion' (default) = VGG-Face based
@@ -63,7 +70,7 @@ class DeepFaceEmotionDetector:
         self.model_loaded = False
 
         logger.info("✅ DeepFaceEmotionDetector initialized")
-        logger.info(f"🔧 Detector Backend: {self.detector_backend}")
+        logger.info(f"🔧 Backend: {self.detector_backend} | GPU: {self.gpu_enabled}")
         logger.info(f"🔧 Confidence Threshold: {self.confidence_threshold}")
 
     def detect_emotion(self, frame: np.ndarray, face_bbox: Optional[tuple] = None) -> Dict:
@@ -84,17 +91,35 @@ class DeepFaceEmotionDetector:
             return self._fallback_detection()
 
         try:
+            # Validate input frame type FIRST
+            if frame is None:
+                logger.warning("⚠️ Frame is None")
+                return self._fallback_detection()
+
+            if not isinstance(frame, np.ndarray):
+                logger.warning(f"⚠️ Invalid frame type: {type(frame)}, expected np.ndarray")
+                return self._fallback_detection()
+
             # If face bbox provided, crop face
             if face_bbox is not None:
                 x, y, w, h = face_bbox
                 face_crop = frame[y:y+h, x:x+w]
-                logger.debug(f"Using face crop: {w}x{h} at ({x},{y})")
+
+                # Validate face_crop after slicing
+                if not isinstance(face_crop, np.ndarray):
+                    logger.warning(f"⚠️ Face crop is not ndarray: {type(face_crop)}")
+                    face_crop = frame  # Fall back to full frame
             else:
                 face_crop = frame
-                logger.debug(f"Using full frame: {frame.shape[1]}x{frame.shape[0]}")
 
-            # Log image info for debugging
-            logger.debug(f"Image shape: {face_crop.shape}, dtype: {face_crop.dtype}, min: {face_crop.min()}, max: {face_crop.max()}")
+            # Final validation before processing
+            if not isinstance(face_crop, np.ndarray):
+                logger.error(f"❌ CRITICAL: face_crop is not ndarray: {type(face_crop)}")
+                return self._fallback_detection()
+
+            # Log frame info (now safe to access .shape)
+            logger.debug(f"✅ Frame OK: type={type(face_crop).__name__}, shape={face_crop.shape}")
+            logger.debug(f"Image dtype: {face_crop.dtype}, min: {face_crop.min()}, max: {face_crop.max()}")
 
             # Analyze emotion with DeepFace
             result = DeepFace.analyze(

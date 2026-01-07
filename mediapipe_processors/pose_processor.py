@@ -33,6 +33,11 @@ class PoseProcessor:
         )
 
         self.last_pose_landmarks = None
+        
+        # Track consecutive errors to trigger reinitialization
+        self.consecutive_errors = 0
+        self.max_consecutive_errors = 5
+        
         logger.info("✅ PoseProcessor initialized")
 
     def process(self, rgb_frame):
@@ -45,17 +50,46 @@ class PoseProcessor:
         Returns:
             dict: Pose metrics including posture_score, body_detected, etc.
         """
-        results = self.pose.process(rgb_frame)
+        # Validate input frame
+        if rgb_frame is None or not isinstance(rgb_frame, np.ndarray):
+            logger.warning(f"Invalid frame type for pose processing: {type(rgb_frame)}")
+            return {'body_detected': False, 'posture_score': 0.0, 'pose_confidence': 0.0}
 
-        if results.pose_landmarks:
-            # Cache landmarks
-            self.last_pose_landmarks = results.pose_landmarks
+        # Check frame dimensions
+        if len(rgb_frame.shape) != 3 or rgb_frame.shape[2] != 3:
+            logger.warning(f"Invalid frame dimensions for pose: {rgb_frame.shape}")
+            return {'body_detected': False, 'posture_score': 0.0, 'pose_confidence': 0.0}
 
-            # Calculate pose metrics
-            metrics = self._calculate_pose_metrics(results.pose_landmarks)
-            metrics['body_detected'] = True
-            return metrics
-        else:
+        try:
+            # Check if we need to reinitialize due to too many errors
+            if self.consecutive_errors >= self.max_consecutive_errors:
+                logger.warning("Too many consecutive pose errors, reinitializing MediaPipe graph")
+                self._reinitialize_graph()
+                self.consecutive_errors = 0
+
+            results = self.pose.process(rgb_frame)
+            
+            # Reset error counter on successful processing
+            self.consecutive_errors = 0
+
+            if results.pose_landmarks:
+                # Cache landmarks
+                self.last_pose_landmarks = results.pose_landmarks
+
+                # Calculate pose metrics
+                metrics = self._calculate_pose_metrics(results.pose_landmarks)
+                metrics['body_detected'] = True
+                return metrics
+            else:
+                return {
+                    'body_detected': False,
+                    'posture_score': 0.0,
+                    'pose_confidence': 0.0
+                }
+
+        except Exception as e:
+            logger.warning(f"Pose processing error (non-critical): {e}")
+            self.consecutive_errors += 1
             return {
                 'body_detected': False,
                 'posture_score': 0.0,
@@ -94,8 +128,49 @@ class PoseProcessor:
             'right_shoulder_x': right_shoulder.x
         }
 
+    def _reinitialize_graph(self):
+        """Reinitialize MediaPipe pose graph when it becomes corrupted"""
+        try:
+            # Close existing graph
+            if hasattr(self, 'pose') and self.pose:
+                try:
+                    self.pose.close()
+                except:
+                    pass
+            
+            # Recreate graph with config settings
+            self.pose = self.mp_pose.Pose(
+                static_image_mode=False,
+                model_complexity=self.config.pose_model_complexity,
+                smooth_landmarks=False,
+                min_detection_confidence=0.5,
+                min_tracking_confidence=0.5
+            )
+            
+            logger.info("✅ Pose MediaPipe graph reinitialized")
+            
+        except Exception as e:
+            logger.error(f"Failed to reinitialize pose graph: {e}")
+
     def cleanup(self):
-        """Release MediaPipe resources"""
-        if hasattr(self, 'pose'):
-            self.pose.close()
-            logger.info("✅ PoseProcessor cleaned up")
+        """Release MediaPipe resources safely"""
+        try:
+            # Check if pose exists and is not None
+            pose_obj = getattr(self, 'pose', None)
+            if pose_obj is not None:
+                try:
+                    pose_obj.close()
+                    logger.debug("Pose graph closed successfully")
+                except Exception as close_error:
+                    logger.debug(f"Error closing pose graph: {close_error}")
+                finally:
+                    self.pose = None
+            else:
+                logger.debug("Pose object is None, skipping close operation")
+        except Exception as e:
+            logger.warning(f"⚠️ Pose cleanup error: {e}")
+        
+        # Reset error tracking
+        self.consecutive_errors = 0
+        
+        logger.info("✅ PoseProcessor cleaned up")

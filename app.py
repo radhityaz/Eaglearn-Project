@@ -21,8 +21,6 @@ from collections import deque
 from config_loader import config
 from improved_webcam_processor import ImprovedWebcamProcessor
 from mediapipe_processors.deepface_emotion_detector import DeepFaceEmotionDetector
-from mediapipe_processors.poster_emotion_detector import POSTEREmotionDetector
-from mediapipe_processors.efficientnet_emotion_detector import EfficientNetEmotionDetector
 
 # Configure logging
 logging.basicConfig(
@@ -111,6 +109,14 @@ class SessionState:
         self.unfocused_time_seconds = 0
         self.distracted_events = 0
 
+        # ENHANCED: Unfocus analytics (GazeRecorder-style)
+        self.unfocus_intervals = []  # List of {'start': float, 'end': float, 'duration': float, 'reason': str}
+        self.unfocus_count = 0  # Total number of unfocus events
+        self.first_unfocus_time = None  # Timestamp of first unfocus event
+        self.last_unfocus_time = None  # Timestamp of last unfocus event
+        self.current_unfocus_start = None  # Start time of current unfocus event (if active)
+        self.current_focus_start = None  # Start time of current focus period (for tracking focus duration)
+
     def _format_time(self, seconds):
         """Format seconds to HH:MM:SS"""
         seconds = int(seconds)
@@ -182,6 +188,14 @@ class SessionState:
                         3
                     ),
                 },
+                # ENHANCED: Unfocus analytics (GazeRecorder-style)
+                'unfocus_analytics': {
+                    'unfocus_count': self.unfocus_count,
+                    'first_unfocus_time': self.first_unfocus_time,
+                    'last_unfocus_time': self.last_unfocus_time,
+                    'intervals_count': len(self.unfocus_intervals),
+                    'recent_intervals': self.unfocus_intervals[-5:] if len(self.unfocus_intervals) > 5 else self.unfocus_intervals,
+                },
             }
 
 # Global state
@@ -194,8 +208,8 @@ state = SessionState()
 # Import improved modular webcam processor
 from improved_webcam_processor import ImprovedWebcamProcessor
 
-# Global webcam processor instance
-webcam = ImprovedWebcamProcessor(state)
+# Global webcam processor instance with socketio reference
+webcam = ImprovedWebcamProcessor(state, socketio=socketio)
 
 # ============================================================================
 # FLASK ROUTES
@@ -259,6 +273,57 @@ def stop_session():
 def get_metrics():
     """Get current metrics"""
     return jsonify(state.to_dict())
+
+@app.route('/api/analytics/unfocus', methods=['GET'])
+def get_unfocus_analytics():
+    """
+    ENHANCED: Get detailed unfocus analytics (GazeRecorder-style)
+
+    Returns comprehensive unfocus statistics including:
+    - Unfocus count, durations, rates
+    - Time to first unfocus
+    - Common unfocus reasons
+    - Recent unfocus intervals
+    """
+    try:
+        analytics = webcam.calculate_unfocus_analytics()
+
+        # Format times for display
+        def format_duration(seconds):
+            if seconds is None:
+                return "N/A"
+            mins = int(seconds // 60)
+            secs = int(seconds % 60)
+            return f"{mins}m {secs}s"
+
+        return jsonify({
+            'status': 'success',
+            'analytics': {
+                'unfocus_count': analytics['unfocus_count'],
+                'total_unfocus_time': analytics['total_duration'],
+                'total_unfocus_time_formatted': format_duration(analytics['total_duration']),
+                'avg_duration': round(analytics['avg_duration'], 1),
+                'avg_duration_formatted': format_duration(analytics['avg_duration']),
+                'min_duration': round(analytics['min_duration'], 1),
+                'max_duration': round(analytics['max_duration'], 1),
+                'time_to_first_unfocus': round(analytics['time_to_first_unfocus'], 1) if analytics['time_to_first_unfocus'] else None,
+                'time_to_first_unfocus_formatted': format_duration(analytics['time_to_first_unfocus']),
+                'unfocus_rate_per_hour': analytics['unfocus_rate'],
+                'common_reasons': analytics['common_reasons'],
+                'recent_intervals': [
+                    {
+                        'start': interval['start'],
+                        'end': interval['end'],
+                        'duration': round(interval['duration'], 1),
+                        'reason': interval['reason']
+                    }
+                    for interval in analytics['recent_intervals']
+                ]
+            }
+        }), 200
+    except Exception as e:
+        logger.error(f"Error calculating unfocus analytics: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/calibration/start', methods=['POST'])
 def start_calibration():

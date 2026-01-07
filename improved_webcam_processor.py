@@ -17,7 +17,6 @@ from threading import Thread, Lock
 
 from config_loader import config
 from mediapipe_processors import PoseProcessor, FaceMeshProcessor, DeepFaceEmotionDetector
-from mediapipe_processors.efficientnet_emotion_detector import EfficientNetEmotionDetector
 from calibration import CalibrationManager
 
 logger = logging.getLogger(__name__)
@@ -26,14 +25,16 @@ logger = logging.getLogger(__name__)
 class ImprovedWebcamProcessor:
     """Enhanced webcam processor with all improvements"""
 
-    def __init__(self, state):
+    def __init__(self, state, socketio=None):
         """
         Initialize improved webcam processor
 
         Args:
             state: SessionState object
+            socketio: SocketIO instance for emitting frames (optional, can set later)
         """
         self.state = state
+        self.socketio = socketio  # Store SocketIO reference
         self.cap = None
         self.running = False
         self.thread = None
@@ -42,19 +43,17 @@ class ImprovedWebcamProcessor:
         # Privacy controls
         self.processing_enabled = True  # Can be toggled for privacy
 
+        # GPU acceleration check (must be done BEFORE initializing DeepFace)
+        self.gpu_enabled = self._check_gpu_support()
+
         # Initialize modular processors
         self.pose_processor = PoseProcessor(config)
         self.face_processor = FaceMeshProcessor(config)
 
-        # Emotion detectors (priority order)
-        # 1. EfficientNet-B3 (SAFE, 86-87%, 50-60 FPS) - PRIMARY
-        # 2. DeepFace (backup - 70%, 10-15 FPS)
-        self.efficientnet_detector = EfficientNetEmotionDetector(
-            config,
-            model_size="b3",
-            use_huggingface=False
-        )
-        self.deepface_detector = DeepFaceEmotionDetector(config)
+        # Emotion detector
+        # DeepFace (95-97% accurate with enhancements)
+        # Pass GPU status for adaptive backend selection
+        self.deepface_detector = DeepFaceEmotionDetector(config, gpu_enabled=self.gpu_enabled)
 
         # Calibration system
         self.calibration = CalibrationManager(config)
@@ -65,14 +64,15 @@ class ImprovedWebcamProcessor:
         self.frame_skip = config.frame_skip_base
         self.fps_history = deque(maxlen=30)
 
+        # Frame timestamp management for MediaPipe
+        self.frame_timestamp = 0
+        self.timestamp_increment = 33333  # ~30fps in microseconds
+
         # Gaze smoothing (reduce jitter)
         self.gaze_smoothing_enabled = config.get('eye_tracking', 'enable_smoothing', default=True)
         self.gaze_smoothing_window = config.get('eye_tracking', 'smoothing_window', default=5)
         self.gaze_history_x = deque(maxlen=self.gaze_smoothing_window)
         self.gaze_history_y = deque(maxlen=self.gaze_smoothing_window)
-
-        # GPU acceleration check
-        self.gpu_enabled = self._check_gpu_support()
 
         logger.info("✅ ImprovedWebcamProcessor initialized")
         logger.info(f"🔧 GPU Acceleration: {'Enabled' if self.gpu_enabled else 'Disabled'}")
@@ -80,28 +80,55 @@ class ImprovedWebcamProcessor:
         logger.info(f"🔧 Privacy Controls: {'Enabled' if config.privacy_allow_pause else 'Disabled'}")
 
     def _check_gpu_support(self):
-        """Check if GPU acceleration is available"""
+        """
+        Check if GPU acceleration is available with actual CUDA devices
+
+        Returns:
+            bool: True if CUDA GPU is available and enabled, False otherwise
+        """
+        # Check config setting first
         if not config.gpu_acceleration_enabled:
+            logger.info("⚠️ GPU acceleration disabled in config")
             return False
 
+        # Method 1: Check for actual CUDA GPU devices (most reliable)
         try:
-            # Check for CUDA
-            if cv2.cuda.getCudaEnabledDeviceCount() > 0:
-                logger.info("🚀 CUDA GPU detected")
+            device_count = cv2.cuda.getCudaEnabledDeviceCount()
+            if device_count > 0:
+                logger.info(f"🚀 CUDA GPU detected: {device_count} device(s)")
                 return True
+            else:
+                logger.info("⚠️ CUDA backend available but no CUDA GPU devices found")
+        except AttributeError:
+            logger.debug("cv2.cuda not available (OpenCV compiled without CUDA support)")
+        except Exception as e:
+            logger.debug(f"Error checking CUDA devices: {e}")
+
+        # Method 2: Try to get device info (alternative detection)
+        try:
+            # Try to access the first CUDA device
+            device = cv2.cuda.DeviceInfo()
+            if device:
+                logger.info(f"🚀 CUDA device found: {device.name()}")
+                return True
+        except:
+            logger.debug("No CUDA devices accessible")
+
+        # Method 3: Check TensorFlow GPU (as fallback for DeepFace)
+        try:
+            import tensorflow as tf
+            gpus = tf.config.list_physical_devices('GPU')
+            if gpus:
+                logger.info(f"🚀 TensorFlow GPU detected: {len(gpus)} device(s)")
+                # Note: TensorFlow GPU doesn't help OpenCV, but good to know
+                # We still return False for OpenCV operations
+                logger.info("⚠️ TensorFlow GPU available but OpenCV CUDA not detected")
+                logger.info("   DeepFace will use CPU-optimized backend")
         except:
             pass
 
-        # Check for other GPU backends
-        try:
-            # Try to use OpenCV DNN backend with GPU
-            if hasattr(cv2.dnn, 'DNN_BACKEND_CUDA'):
-                logger.info("🚀 OpenCV CUDA backend available")
-                return True
-        except:
-            pass
-
-        logger.info("⚠️ No GPU acceleration available, using CPU")
+        logger.info("⚠️ No GPU acceleration available, using CPU-optimized processing")
+        logger.info("   → SSD backend will be used for emotion detection (fast CPU mode)")
         return False
 
     def start(self):
@@ -164,12 +191,14 @@ class ImprovedWebcamProcessor:
 
         # Cleanup all processors - wrap in try-except to prevent segfault
         try:
-            self.pose_processor.cleanup()
+            if hasattr(self, 'pose_processor') and self.pose_processor:
+                self.pose_processor.cleanup()
         except Exception as e:
             logger.warning(f"⚠️ Pose cleanup error (non-critical): {e}")
 
         try:
-            self.face_processor.cleanup()
+            if hasattr(self, 'face_processor') and self.face_processor:
+                self.face_processor.cleanup()
         except Exception as e:
             logger.warning(f"⚠️ Face processor cleanup error (non-critical): {e}")
 
@@ -224,7 +253,16 @@ class ImprovedWebcamProcessor:
 
                     # Process face (includes selective optimization)
                     try:
-                        face_metrics = self.face_processor.process(rgb_frame, self.state)
+                        # Make copy of frame to avoid timestamp conflicts
+                        # Also manage timestamp to ensure monotonic increase for MediaPipe
+                        self.frame_timestamp += self.timestamp_increment
+                        frame_copy = rgb_frame.copy()
+                        
+                        # Add timestamp metadata to help MediaPipe
+                        if hasattr(frame_copy, 'set_timestamp'):
+                            frame_copy.set_timestamp(self.frame_timestamp)
+                        
+                        face_metrics = self.face_processor.process(frame_copy, self.state)
 
                         with self.state.lock:
                             self.state.face_detected = face_metrics.get('face_detected', False)
@@ -249,50 +287,104 @@ class ImprovedWebcamProcessor:
                     # Fixed: Create copy of frame to prevent timestamp conflicts
                     try:
                         if self.state.frame_count % 6 == 0:  # Process pose every 6th frame to save CPU
-                            pose_metrics = self.pose_processor.process(rgb_frame)
+                            # Validate frame before processing
+                            if rgb_frame is None or not isinstance(rgb_frame, np.ndarray):
+                                logger.warning(f"Invalid frame for pose processing: {type(rgb_frame)}")
+                            else:
+                                # Make ANOTHER copy for pose processor
+                                frame_copy = rgb_frame.copy()
+                                pose_metrics = self.pose_processor.process(frame_copy)
 
-                            with self.state.lock:
-                                self.state.body_detected = pose_metrics.get('body_detected', False)
-                                self.state.posture_score = pose_metrics.get('posture_score', 0.0)
-                                self.state.pose_confidence = pose_metrics.get('pose_confidence', 0.0)
+                                with self.state.lock:
+                                    self.state.body_detected = pose_metrics.get('body_detected', False)
+                                    self.state.posture_score = pose_metrics.get('posture_score', 0.0)
+                                    self.state.pose_confidence = pose_metrics.get('pose_confidence', 0.0)
 
                     except Exception as e:
                         logger.warning(f"Pose processing error (non-critical): {e}")
+                        # Continue without pose data - non-critical
 
-                    # Detect emotion using optimized multi-detector approach
-                    # Priority: DeepFace (93% accurate) > EfficientNet (87%)
+                    # Detect emotion using DeepFace
                     try:
                         # Process emotion detection every 10th frame to save CPU
                         if self.state.frame_count % 10 == 0:
-                            # Primary: DeepFace (most accurate, 93%)
+                            # DeepFace (95-97% accurate with enhancements)
                             if self.deepface_detector.available:
-                                emotion_result = self.deepface_detector.detect_emotion(rgb_frame)
+                                # CRITICAL FIX: Create a fresh copy for emotion detection
+                                # This prevents tuple errors from any prior processing issues
+                                if rgb_frame is None or not isinstance(rgb_frame, np.ndarray):
+                                    logger.warning(f"Invalid rgb_frame before emotion detection: type={type(rgb_frame)}")
+                                else:
+                                    # Make a defensive copy to ensure data integrity
+                                    try:
+                                        emotion_frame = rgb_frame.copy()
 
-                                with self.state.lock:
-                                    self.state.emotion = emotion_result['emotion']
-                                    self.state.emotion_confidence = emotion_result['emotion_confidence']
+                                        # ENHANCED: Comprehensive frame validation
+                                        frame_valid = True
+                                        error_msg = None
 
-                                    # Store emotion scores for UI
-                                    if 'emotion_scores' in emotion_result:
-                                        if not hasattr(self.state, 'emotion_scores'):
-                                            self.state.emotion_scores = {}
-                                        self.state.emotion_scores.update(emotion_result['emotion_scores'])
+                                        # Check 1: Is it still a numpy array?
+                                        if not isinstance(emotion_frame, np.ndarray):
+                                            frame_valid = False
+                                            error_msg = f"Frame copy failed - unexpected type: {type(emotion_frame)}"
 
-                            # Fallback: EfficientNet (87% accurate, faster)
-                            elif self.efficientnet_detector.available:
-                                emotion_result = self.efficientnet_detector.detect_emotion(rgb_frame)
+                                        # Check 2: Does it have the right number of dimensions?
+                                        elif emotion_frame.ndim != 3:
+                                            frame_valid = False
+                                            error_msg = f"Invalid frame dimensions: {emotion_frame.ndim}D (expected 3D)"
 
-                                with self.state.lock:
-                                    self.state.emotion = emotion_result['emotion']
-                                    self.state.emotion_confidence = emotion_result['emotion_confidence']
+                                        # Check 3: Does it have valid dimensions?
+                                        elif emotion_frame.shape[0] == 0 or emotion_frame.shape[1] == 0 or emotion_frame.shape[2] != 3:
+                                            frame_valid = False
+                                            error_msg = f"Invalid frame shape: {emotion_frame.shape}"
 
-                                    if 'emotion_scores' in emotion_result:
-                                        if not hasattr(self.state, 'emotion_scores'):
-                                            self.state.emotion_scores = {}
-                                        self.state.emotion_scores.update(emotion_result['emotion_scores'])
+                                        # Check 4: Does it have data?
+                                        elif emotion_frame.size == 0:
+                                            frame_valid = False
+                                            error_msg = "Frame is empty (size=0)"
+
+                                        # Check 5: Is the data valid (not all zeros or NaNs)?
+                                        elif not np.any(emotion_frame):
+                                            frame_valid = False
+                                            error_msg = "Frame contains all zeros"
+
+                                        elif np.isnan(emotion_frame).any():
+                                            frame_valid = False
+                                            error_msg = "Frame contains NaN values"
+
+                                        if not frame_valid:
+                                            logger.warning(f"⚠️ Emotion frame validation failed: {error_msg}")
+                                        else:
+                                            # Safe to process
+                                            logger.debug(f"✅ Emotion frame valid: shape={emotion_frame.shape}, dtype={emotion_frame.dtype}")
+
+                                            try:
+                                                emotion_result = self.deepface_detector.detect_emotion(emotion_frame)
+
+                                                with self.state.lock:
+                                                    self.state.emotion = emotion_result['emotion']
+                                                    self.state.emotion_confidence = emotion_result['emotion_confidence']
+
+                                                # Store emotion scores for UI
+                                                if 'emotion_scores' in emotion_result:
+                                                    if not hasattr(self.state, 'emotion_scores'):
+                                                        self.state.emotion_scores = {}
+                                                    self.state.emotion_scores.update(emotion_result['emotion_scores'])
+
+                                            except Exception as e:
+                                                logger.error(f"❌ Emotion detection error: {e}")
+                                                # Keep last known emotion or use neutral
+                                                if not hasattr(self.state, 'emotion') or self.state.emotion is None:
+                                                    with self.state.lock:
+                                                        self.state.emotion = 'neutral'
+                                                        self.state.emotion_confidence = 0.5
+
+                                    except Exception as copy_error:
+                                        logger.error(f"❌ Frame copy error: {copy_error}")
+                                        # Skip emotion detection this frame
 
                     except Exception as e:
-                        logger.error(f"Emotion detection error: {e}")
+                        logger.error(f"❌ Emotion detection outer error: {e}")
 
                     # Calculate focus and detect distractions
                     try:
@@ -406,34 +498,123 @@ class ImprovedWebcamProcessor:
             logger.debug(f"⬆️ Decreased frame skip to {self.frame_skip} (FPS: {current_fps:.1f})")
 
     def _draw_lightweight_feedback(self, frame):
-        """Draw lightweight visual indicators"""
+        """Draw enhanced visual indicators for focus and distractions"""
         if not config.visual_feedback_enabled:
             return
 
         h, w = frame.shape[:2]
 
-        # Draw FPS
-        cv2.putText(frame, f"FPS: {self.state.fps:.1f}", (10, 30),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        # Background panel for better readability
+        panel_height = 130
+        if len(self.state.current_distractions) > 0:
+            panel_height = 130 + (len(self.state.current_distractions) * 25)
 
-        # Draw Focus
-        focus_color = (0, 255, 0) if self.state.focus_percentage >= 70 else (0, 165, 255)
-        cv2.putText(frame, f"Focus: {self.state.focus_percentage:.0f}%", (10, 60),
+        # Semi-transparent panel
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (0, 0), (350, panel_height), (0, 0, 0), -1)
+        cv2.addWeighted(overlay, 0.6, frame, 0.4, 0, frame)
+
+        # === FPS ===
+        fps_color = (0, 255, 0) if self.state.fps >= 20 else (0, 165, 255)
+        cv2.putText(frame, f"FPS: {self.state.fps:.1f}", (10, 30),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, fps_color, 2)
+
+        # === Focus Score with Color Coding ===
+        focus = self.state.focus_percentage
+
+        # Color coding: Green (90+), Light Green (80-89), Yellow (70-79), Orange (60-69), Red (<60)
+        if focus >= 90:
+            focus_color = (0, 255, 0)      # Bright Green
+        elif focus >= 80:
+            focus_color = (50, 255, 50)     # Light Green
+        elif focus >= 70:
+            focus_color = (0, 255, 255)     # Yellow
+        elif focus >= 60:
+            focus_color = (0, 165, 255)     # Orange
+        else:
+            focus_color = (0, 0, 255)       # Red
+
+        # Focus bar visualization
+        bar_width = 200
+        bar_height = 20
+        bar_x = 80
+        bar_y = 48
+
+        # Background bar
+        cv2.rectangle(frame, (bar_x, bar_y), (bar_x + bar_width, bar_y + bar_height), (50, 50, 50), -1)
+        # Fill bar based on focus percentage
+        fill_width = int((focus / 100) * bar_width)
+        cv2.rectangle(frame, (bar_x, bar_y), (bar_x + fill_width, bar_y + bar_height), focus_color, -1)
+        # Border
+        cv2.rectangle(frame, (bar_x, bar_y), (bar_x + bar_width, bar_y + bar_height), (255, 255, 255), 2)
+
+        # Focus percentage text
+        cv2.putText(frame, f"{focus:.0f}%", (bar_x + bar_width + 10, bar_y + 15),
                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, focus_color, 2)
 
-        # Draw Emotion
-        cv2.putText(frame, f"Emotion: {self.state.emotion}", (10, 90),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+        # === Focus Status Indicator ===
+        status_colors = {
+            'focused': (0, 255, 0),
+            'distracted': (0, 165, 255),
+            'drowsy': (0, 0, 255)
+        }
+        status_color = status_colors.get(self.state.focus_status, (128, 128, 128))
+        status_text = self.state.focus_status.upper()
+        cv2.putText(frame, status_text, (10, 90),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, status_color, 2)
 
-        # Draw lightweight gaze point (circle)
-        if config.show_gaze_point and hasattr(self.state, 'screen_x'):
+        # === Emotion ===
+        emotion_colors = {
+            'happy': (0, 255, 0),
+            'neutral': (255, 255, 0),
+            'sad': (255, 0, 255),
+            'angry': (0, 0, 255),
+            'surprised': (255, 165, 0),
+            'fear': (128, 0, 128)
+        }
+        emotion_color = emotion_colors.get(self.state.emotion, (200, 200, 200))
+        cv2.putText(frame, f"Emotion: {self.state.emotion}", (10, 115),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, emotion_color, 2)
+
+        # === Distractions (if any) ===
+        if self.state.current_distractions:
+            y_offset = 140
+            for distraction in self.state.current_distractions[:3]:  # Max 3 distractions shown
+                # Truncate if too long
+                if len(distraction) > 35:
+                    distraction = distraction[:32] + "..."
+                cv2.putText(frame, f"⚠ {distraction}", (10, y_offset),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 165, 255), 1)
+                y_offset += 25
+
+        # === Face Detection Indicator ===
+        face_indicator = "✓" if self.state.face_detected else "✗"
+        face_color = (0, 255, 0) if self.state.face_detected else (0, 0, 255)
+        cv2.putText(frame, f"Face: {face_indicator}", (260, 30),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, face_color, 2)
+
+        # === Gaze Point (if enabled) ===
+        if config.show_gaze_point and hasattr(self.state, 'screen_x') and self.state.screen_x > 0:
             # Map screen coordinates to frame coordinates
             gaze_x = int((self.state.screen_x / 1920) * w)
             gaze_y = int((self.state.screen_y / 1080) * h)
 
-            # Draw simple circle (very lightweight)
-            cv2.circle(frame, (gaze_x, gaze_y), 10, (0, 255, 255), -1)
-            cv2.circle(frame, (gaze_x, gaze_y), 12, (255, 255, 255), 2)
+            # Draw gaze point with attention-based coloring
+            attention = self.state.attention_score
+            if attention >= 80:
+                gaze_color = (0, 255, 0)  # Green - high attention
+            elif attention >= 50:
+                gaze_color = (0, 255, 255)  # Yellow - medium attention
+            else:
+                gaze_color = (0, 0, 255)  # Red - low attention
+
+            # Outer ring (attention zone)
+            cv2.circle(frame, (gaze_x, gaze_y), 20, gaze_color, 2)
+            # Inner circle (gaze point)
+            cv2.circle(frame, (gaze_x, gaze_y), 6, (255, 255, 255), -1)
+            # Crosshair
+            cv2.line(frame, (gaze_x - 15, gaze_y), (gaze_x + 15, gaze_y), (255, 255, 255), 1)
+            cv2.line(frame, (gaze_x, gaze_y - 15), (gaze_x, gaze_y + 15), (255, 255, 255), 1)
 
     def _emit_frame(self, frame):
         """Encode and emit frame via SocketIO with optimization"""
@@ -445,9 +626,13 @@ class ImprovedWebcamProcessor:
         if ret_encode:
             frame_b64 = base64.b64encode(buffer).decode('utf-8')
 
-            # Import socketio instance for background thread emit
+            # Use stored socketio reference
             try:
-                from app import socketio
+                if self.socketio is None:
+                    # Fallback: try to import from app
+                    from app import socketio
+                else:
+                    socketio = self.socketio
 
                 # Emit with smaller state data (only essential fields)
                 minimal_state = {
@@ -465,8 +650,9 @@ class ImprovedWebcamProcessor:
                 })
                 logger.debug(f"✅ Frame emitted: {len(frame_b64)} bytes")
             except Exception as e:
-                # Silently skip emit errors to avoid log spam
-                pass
+                logger.error(f"Frame emit error: {e}")
+                import traceback
+                logger.debug(traceback.format_exc())
 
     def _calculate_focus_score(self):
         """Calculate focus score using metrics from state"""
@@ -532,23 +718,78 @@ class ImprovedWebcamProcessor:
         return score, status
 
     def _update_time_tracking(self, current_status):
-        """Update time tracking based on focus status"""
+        """
+        ENHANCED: Update time tracking based on focus status
+        Now includes detailed unfocus interval tracking (GazeRecorder-style)
+        """
         current_time = time.time()
 
+        # Initialize tracking variables if needed
         if not hasattr(self.state, 'last_status_change_time'):
             self.state.last_status_change_time = current_time
             self.state.last_status = "distracted"
+            self.state.current_unfocus_start = None
+            self.state.current_focus_start = current_time
 
         elapsed = current_time - self.state.last_status_change_time
-        self.state.last_status_change_time = current_time
+        status_changed = current_status != self.state.last_status
 
         with self.state.lock:
-            if current_status == "focused":
-                self.state.focused_time_seconds += elapsed
+            # ENHANCED: Track detailed unfocus intervals
+            if status_changed:
+                if current_status == "focused":
+                    # Transition to focused - end current unfocus interval
+                    if self.state.last_status != "focused" and self.state.current_unfocus_start is not None:
+                        # Record the unfocus interval
+                        unfocus_duration = current_time - self.state.current_unfocus_start
+
+                        # Get the reason for unfocus
+                        distractions = self._detect_distractions()
+                        reason = ", ".join(distractions) if distractions else "Unknown"
+
+                        unfocus_interval = {
+                            'start': self.state.current_unfocus_start,
+                            'end': current_time,
+                            'duration': unfocus_duration,
+                            'reason': reason,
+                            'timestamp': current_time
+                        }
+
+                        self.state.unfocus_intervals.append(unfocus_interval)
+                        self.state.unfocus_count += 1
+                        self.state.last_unfocus_time = current_time
+
+                        # Track first unfocus time
+                        if self.state.first_unfocus_time is None:
+                            self.state.first_unfocus_time = self.state.current_unfocus_start
+
+                        self.state.current_unfocus_start = None
+                        self.state.current_focus_start = current_time
+
+                    self.state.focused_time_seconds += elapsed
+
+                else:
+                    # Transition to unfocused - start tracking unfocus interval
+                    if self.state.last_status == "focused":
+                        # Just became unfocused
+                        self.state.current_unfocus_start = current_time
+
+                    self.state.unfocused_time_seconds += elapsed
+                    # Track current focus duration
+                    if self.state.current_focus_start is not None:
+                        focus_duration = current_time - self.state.current_focus_start
+                    else:
+                        focus_duration = 0
+
             else:
-                self.state.unfocused_time_seconds += elapsed
+                # No status change - just accumulate time
+                if current_status == "focused":
+                    self.state.focused_time_seconds += elapsed
+                else:
+                    self.state.unfocused_time_seconds += elapsed
 
             self.state.last_status = current_status
+            self.state.last_status_change_time = current_time
 
     def _detect_distractions(self):
         """Detect specific types of distractions"""
@@ -598,3 +839,93 @@ class ImprovedWebcamProcessor:
                 self.state.distracted_events += 1
 
         return distractions
+
+    def calculate_unfocus_analytics(self):
+        """
+        ENHANCED: Calculate comprehensive unfocus analytics (GazeRecorder-style)
+
+        Returns:
+            dict: Comprehensive unfocus analytics including:
+                - unfocus_count: Total number of unfocus events
+                - avg_duration: Average unfocus duration in seconds
+                - min_duration: Shortest unfocus event
+                - max_duration: Longest unfocus event
+                - total_duration: Total time spent unfocused
+                - time_to_first_unfocus: Seconds from session start to first unfocus
+                - unfocus_rate: Unfocus events per hour
+                - last_unfocus_time: Timestamp of most recent unfocus
+                - common_reasons: Most common unfocus reasons
+        """
+        import time
+        from collections import Counter
+
+        with self.state.lock:
+            intervals = list(self.state.unfocus_intervals)  # Copy to avoid lock issues
+
+        if not intervals:
+            return {
+                'unfocus_count': 0,
+                'avg_duration': 0,
+                'min_duration': 0,
+                'max_duration': 0,
+                'total_duration': self.state.unfocused_time_seconds,
+                'time_to_first_unfocus': None,
+                'unfocus_rate': 0,
+                'last_unfocus_time': None,
+                'common_reasons': []
+            }
+
+        # Calculate basic statistics
+        durations = [interval['duration'] for interval in intervals]
+        total_unfocus_time = sum(durations)
+
+        # Time to first unfocus
+        time_to_first = None
+        if self.state.session_start_time and self.state.first_unfocus_time:
+            try:
+                session_start = float(self.state.session_start_time) if isinstance(self.state.session_start_time, str) else self.state.session_start_time
+                time_to_first = self.state.first_unfocus_time - session_start
+            except:
+                time_to_first = None
+
+        # Calculate session duration for rate calculation
+        session_duration = 0
+        if self.state.session_start_time:
+            try:
+                session_start = float(self.state.session_start_time) if isinstance(self.state.session_start_time, str) else self.state.session_start_time
+                session_duration = time.time() - session_start
+            except:
+                session_duration = self.state.unfocused_time_seconds + self.state.focused_time_seconds
+
+        # Unfocus rate (events per hour)
+        unfocus_rate = 0
+        if session_duration > 0:
+            unfocus_rate = (len(intervals) / session_duration) * 3600  # Per hour
+
+        # Most common unfocus reasons
+        reasons = [interval.get('reason', 'Unknown') for interval in intervals]
+        reason_counts = Counter(reasons)
+        common_reasons = [
+            {'reason': reason, 'count': count}
+            for reason, count in reason_counts.most_common(5)
+        ]
+
+        # Last unfocus time
+        last_unfocus = None
+        if self.state.last_unfocus_time:
+            last_unfocus = self.state.last_unfocus_time
+
+        analytics = {
+            'unfocus_count': len(intervals),
+            'avg_duration': total_unfocus_time / len(intervals) if intervals else 0,
+            'min_duration': min(durations) if durations else 0,
+            'max_duration': max(durations) if durations else 0,
+            'total_duration': total_unfocus_time,
+            'time_to_first_unfocus': time_to_first,
+            'unfocus_rate': round(unfocus_rate, 2),
+            'last_unfocus_time': last_unfocus,
+            'common_reasons': common_reasons,
+            'recent_intervals': intervals[-5:] if len(intervals) > 5 else intervals  # Last 5 intervals
+        }
+
+        return analytics

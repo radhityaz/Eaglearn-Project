@@ -45,6 +45,13 @@ class FaceMeshProcessor:
         # Face stability tracking for selective processing
         self.face_stability_history = deque(maxlen=5)
 
+        # Track last successful processing to avoid timestamp conflicts
+        self.last_frame_timestamp = None
+
+        # Track consecutive errors to trigger reinitialization
+        self.consecutive_errors = 0
+        self.max_consecutive_errors = 5
+
         logger.info("✅ FaceMeshProcessor initialized")
 
     def process(self, rgb_frame, state):
@@ -58,41 +65,80 @@ class FaceMeshProcessor:
         Returns:
             dict: Face metrics including EAR, MAR, head pose, eye gaze, etc.
         """
-        # First, detect faces
-        detection_results = self.face_detection.process(rgb_frame)
+        # Validate input frame
+        if rgb_frame is None or not isinstance(rgb_frame, np.ndarray):
+            logger.warning(f"Invalid frame type for face processing: {type(rgb_frame)}")
+            return {'face_detected': False, 'face_count': 0}
 
-        if detection_results.detections:
-            metrics = {
-                'face_detected': True,
-                'face_count': len(detection_results.detections)
-            }
+        # Check frame dimensions
+        if len(rgb_frame.shape) != 3 or rgb_frame.shape[2] != 3:
+            logger.warning(f"Invalid frame dimensions: {rgb_frame.shape}")
+            return {'face_detected': False, 'face_count': 0}
 
-            # Selective processing: only process face mesh if face is stable
-            if self._should_process_face_mesh():
-                face_results = self.face_mesh.process(rgb_frame)
-                if face_results.multi_face_landmarks:
-                    # Cache landmarks
-                    self.last_face_landmarks = face_results.multi_face_landmarks[0]
+        try:
+            # Check if we need to reinitialize due to too many errors
+            if self.consecutive_errors >= self.max_consecutive_errors:
+                logger.warning("Too many consecutive errors, reinitializing MediaPipe graphs")
+                self._reinitialize_graphs()
+                self.consecutive_errors = 0
 
-                    # Extract detailed metrics
-                    landmarks = face_results.multi_face_landmarks[0]
-                    metrics.update(self._extract_face_metrics(landmarks, state))
+            # First, detect faces
+            detection_results = self.face_detection.process(rgb_frame)
+            
+            # Reset error counter on successful processing
+            self.consecutive_errors = 0
 
+            if detection_results.detections:
+                metrics = {
+                    'face_detected': True,
+                    'face_count': len(detection_results.detections)
+                }
+
+                # Selective processing: only process face mesh if face is stable
+                if self._should_process_face_mesh():
+                    try:
+                        face_results = self.face_mesh.process(rgb_frame)
+                        if face_results.multi_face_landmarks:
+                            # Cache landmarks
+                            self.last_face_landmarks = face_results.multi_face_landmarks[0]
+
+                            # Extract detailed metrics
+                            landmarks = face_results.multi_face_landmarks[0]
+                            metrics.update(self._extract_face_metrics(landmarks, state))
+
+                            # Update stability tracking
+                            self._update_stability_tracking(0.9)  # High confidence if processed
+                    except Exception as e:
+                        logger.warning(f"Face mesh processing error (non-critical): {e}")
+                        # Continue with basic face detection only
+                        self._update_stability_tracking(0.5)  # Medium confidence
+                else:
+                    # Skip processing, return minimal metrics
+                    metrics.update({
+                        'eye_aspect_ratio': state.eye_aspect_ratio if hasattr(state, 'eye_aspect_ratio') else 0.0,
+                        'mouth_aspect_ratio': state.mouth_aspect_ratio if hasattr(state, 'mouth_aspect_ratio') else 0.0,
+                    })
                     # Update stability tracking
-                    self._update_stability_tracking(0.9)  # High confidence if processed
-            else:
-                # Skip processing, return minimal metrics
-                metrics.update({
-                    'eye_aspect_ratio': state.eye_aspect_ratio if hasattr(state, 'eye_aspect_ratio') else 0.0,
-                    'mouth_aspect_ratio': state.mouth_aspect_ratio if hasattr(state, 'mouth_aspect_ratio') else 0.0,
-                })
+                    self._update_stability_tracking(0.3)  # Low confidence if skipped
 
-            return metrics
-        else:
-            self._update_stability_tracking(0.0)  # No face detected
+                return metrics
+            else:
+                self._update_stability_tracking(0.0)  # No face detected
+                return {
+                    'face_detected': False,
+                    'face_count': 0
+                }
+
+        except Exception as e:
+            logger.error(f"Face processing error: {e}")
+            self.consecutive_errors += 1
+            
+            # Return safe fallback values
             return {
                 'face_detected': False,
-                'face_count': 0
+                'face_count': 0,
+                'eye_aspect_ratio': 0.0,
+                'mouth_aspect_ratio': 0.0
             }
 
     def _should_process_face_mesh(self):
@@ -130,20 +176,34 @@ class FaceMeshProcessor:
 
         metrics = {}
 
+        # Ensure state attributes are properly initialized with numeric types
+        if not hasattr(state, 'blink_count'):
+            state.blink_count = 0
+        if not hasattr(state, 'last_blink_time'):
+            state.last_blink_time = None
+        if not hasattr(state, 'session_start_time'):
+            state.session_start_time = None
+        if not hasattr(state, 'blink_rate'):
+            state.blink_rate = 0
+
         # ===== EYE ASPECT RATIO (EAR) =====
-        left_eye_top = landmarks.landmark[159].y
-        left_eye_bottom = landmarks.landmark[145].y
-        left_eye_left = landmarks.landmark[33].x
-        left_eye_right = landmarks.landmark[133].x
+        try:
+            left_eye_top = float(landmarks.landmark[159].y)
+            left_eye_bottom = float(landmarks.landmark[145].y)
+            left_eye_left = float(landmarks.landmark[33].x)
+            left_eye_right = float(landmarks.landmark[133].x)
 
-        eye_vertical = abs(left_eye_top - left_eye_bottom)
-        eye_horizontal = abs(left_eye_left - left_eye_right)
+            eye_vertical = abs(left_eye_top - left_eye_bottom)
+            eye_horizontal = abs(left_eye_left - left_eye_right)
 
-        ear = eye_vertical / eye_horizontal if eye_horizontal > 0 else 0
-        metrics['eye_aspect_ratio'] = min(ear, 1.0)
+            ear = eye_vertical / eye_horizontal if eye_horizontal > 0 else 0
+            metrics['eye_aspect_ratio'] = min(ear, 1.0)
+        except (AttributeError, TypeError, ZeroDivisionError) as e:
+            logger.warning(f"Error calculating EAR: {e}")
+            metrics['eye_aspect_ratio'] = 0.0
+            ear = 0.0
 
         # ===== BLINK DETECTION =====
-        import time
         blink_ear_threshold = self.config.get('emotion', 'blink_ear_threshold', default=0.21)
         blink_debounce = self.config.get('emotion', 'blink_debounce_time', default=0.20)
 
@@ -152,15 +212,26 @@ class FaceMeshProcessor:
 
         if is_blinking:
             # Check debounce time to prevent double-counting
-            if hasattr(state, 'last_blink_time') and (current_time - state.last_blink_time) > blink_debounce:
-                state.blink_count += 1
-                state.last_blink_time = current_time
+            if hasattr(state, 'last_blink_time') and state.last_blink_time is not None:
+                try:
+                    # Ensure last_blink_time is numeric
+                    last_blink_time = float(state.last_blink_time)
+                    if (current_time - last_blink_time) > blink_debounce:
+                        state.blink_count += 1
+                        state.last_blink_time = current_time
 
-                # Calculate blink rate
-                if hasattr(state, 'session_start_time') and state.session_start_time:
-                    session_duration = current_time - state.session_start_time
-                    if session_duration > 0:
-                        state.blink_rate = int((state.blink_count / session_duration) * 60)
+                        # Calculate blink rate
+                        if hasattr(state, 'session_start_time') and state.session_start_time:
+                            try:
+                                session_start_time = float(state.session_start_time)
+                                session_duration = current_time - session_start_time
+                                if session_duration > 0:
+                                    state.blink_rate = int((state.blink_count / session_duration) * 60)
+                            except (ValueError, TypeError):
+                                logger.warning(f"Invalid session_start_time type: {type(state.session_start_time)}")
+                except (ValueError, TypeError):
+                    logger.warning(f"Invalid last_blink_time type: {type(state.last_blink_time)}")
+                    state.last_blink_time = current_time  # Reset to valid value
 
         metrics['is_blinking'] = is_blinking
 
@@ -243,11 +314,20 @@ class FaceMeshProcessor:
             # Apply calibration if available (from self.calibration if passed)
             # Check if state has calibration data
             if hasattr(state, 'calibration_applied') and state.calibration_applied:
-                # Use calibrated values
-                eye_gaze_x = raw_gaze_x - state.calibration_gaze_offset_x
-                eye_gaze_y = raw_gaze_y - state.calibration_gaze_offset_y
-                eye_gaze_x *= state.calibration_scale_factor
-                eye_gaze_y *= state.calibration_scale_factor
+                # Use calibrated values with type validation
+                try:
+                    gaze_offset_x = float(state.calibration_gaze_offset_x) if hasattr(state, 'calibration_gaze_offset_x') else 0.0
+                    gaze_offset_y = float(state.calibration_gaze_offset_y) if hasattr(state, 'calibration_gaze_offset_y') else 0.0
+                    scale_factor = float(state.calibration_scale_factor) if hasattr(state, 'calibration_scale_factor') else 1.0
+                    
+                    eye_gaze_x = raw_gaze_x - gaze_offset_x
+                    eye_gaze_y = raw_gaze_y - gaze_offset_y
+                    eye_gaze_x *= scale_factor
+                    eye_gaze_y *= scale_factor
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Calibration data type error: {e}, using raw gaze values")
+                    eye_gaze_x = raw_gaze_x
+                    eye_gaze_y = raw_gaze_y
             else:
                 # Use raw values (no calibration)
                 eye_gaze_x = raw_gaze_x
@@ -264,8 +344,13 @@ class FaceMeshProcessor:
 
             # Get calibration data if available
             if hasattr(state, 'calibration_scale_x'):
-                scale_x = state.calibration_scale_x
-                scale_y = state.calibration_scale_y
+                try:
+                    scale_x = float(state.calibration_scale_x)
+                    scale_y = float(state.calibration_scale_y)
+                except (ValueError, TypeError):
+                    logger.warning(f"Invalid calibration scale types, using defaults")
+                    scale_x = self.config.get('eye_tracking', 'gaze_scale_x', default=800)
+                    scale_y = self.config.get('eye_tracking', 'gaze_scale_y', default=450)
             else:
                 scale_x = self.config.get('eye_tracking', 'gaze_scale_x', default=800)
                 scale_y = self.config.get('eye_tracking', 'gaze_scale_y', default=450)
@@ -331,9 +416,13 @@ class FaceMeshProcessor:
         metrics['confusion_level'] = np.clip(confusion_level, 0, 1)
 
         blink_stress = 0
-        if hasattr(state, 'blink_rate'):
-            if state.blink_rate < 10 or state.blink_rate > 30:
-                blink_stress = 0.3
+        if hasattr(state, 'blink_rate') and state.blink_rate is not None:
+            try:
+                blink_rate = float(state.blink_rate)
+                if blink_rate < 10 or blink_rate > 30:
+                    blink_stress = 0.3
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid blink_rate type: {type(state.blink_rate)}")
         metrics['stress_level'] = np.clip(metrics['lip_tension'] * 0.7 + blink_stress, 0, 1)
 
         # ===== YAWNING DETECTION =====
@@ -341,8 +430,18 @@ class FaceMeshProcessor:
         current_time = time.time()
 
         if is_yawning:
-            if hasattr(state, 'last_yawn_time') and (current_time - state.last_yawn_time) < 5:
-                metrics['yawning_duration'] = current_time - state.last_yawn_time
+            if hasattr(state, 'last_yawn_time') and state.last_yawn_time is not None:
+                try:
+                    last_yawn_time = float(state.last_yawn_time)
+                    if (current_time - last_yawn_time) < 5:
+                        metrics['yawning_duration'] = current_time - last_yawn_time
+                    else:
+                        metrics['last_yawn_time'] = current_time
+                        metrics['yawning_duration'] = 0
+                except (ValueError, TypeError):
+                    logger.warning(f"Invalid last_yawn_time type: {type(state.last_yawn_time)}")
+                    metrics['last_yawn_time'] = current_time
+                    metrics['yawning_duration'] = 0
             else:
                 metrics['last_yawn_time'] = current_time
                 metrics['yawning_duration'] = 0
@@ -351,10 +450,75 @@ class FaceMeshProcessor:
 
         return metrics
 
+    def _reinitialize_graphs(self):
+        """Reinitialize MediaPipe graphs when they become corrupted"""
+        try:
+            # Close existing graphs
+            if hasattr(self, 'face_detection') and self.face_detection:
+                try:
+                    self.face_detection.close()
+                except:
+                    pass
+            if hasattr(self, 'face_mesh') and self.face_mesh:
+                try:
+                    self.face_mesh.close()
+                except:
+                    pass
+            
+            # Recreate graphs
+            self.face_detection = self.mp_face_detection.FaceDetection(
+                model_selection=self.config.face_detection_selection,
+                min_detection_confidence=0.3
+            )
+            
+            self.face_mesh = self.mp_face_mesh.FaceMesh(
+                static_image_mode=False,
+                max_num_faces=1,
+                refine_landmarks=True,
+                min_detection_confidence=0.3,
+                min_tracking_confidence=0.3
+            )
+            
+            logger.info("✅ MediaPipe graphs reinitialized")
+            
+        except Exception as e:
+            logger.error(f"Failed to reinitialize MediaPipe graphs: {e}")
+
     def cleanup(self):
-        """Release MediaPipe resources"""
-        if hasattr(self, 'face_detection'):
-            self.face_detection.close()
-        if hasattr(self, 'face_mesh'):
-            self.face_mesh.close()
-            logger.info("✅ FaceMeshProcessor cleaned up")
+        """Release MediaPipe resources safely"""
+        try:
+            # Check if face_detection exists and is not None
+            face_detection_obj = getattr(self, 'face_detection', None)
+            if face_detection_obj is not None:
+                try:
+                    face_detection_obj.close()
+                    logger.debug("Face detection graph closed successfully")
+                except Exception as close_error:
+                    logger.debug(f"Error closing face detection graph: {close_error}")
+                finally:
+                    self.face_detection = None
+            else:
+                logger.debug("Face detection object is None, skipping close operation")
+        except Exception as e:
+            logger.warning(f"⚠️ Face detection cleanup error: {e}")
+
+        try:
+            # Check if face_mesh exists and is not None
+            face_mesh_obj = getattr(self, 'face_mesh', None)
+            if face_mesh_obj is not None:
+                try:
+                    face_mesh_obj.close()
+                    logger.debug("Face mesh graph closed successfully")
+                except Exception as close_error:
+                    logger.debug(f"Error closing face mesh graph: {close_error}")
+                finally:
+                    self.face_mesh = None
+            else:
+                logger.debug("Face mesh object is None, skipping close operation")
+        except Exception as e:
+            logger.warning(f"⚠️ Face mesh cleanup error: {e}")
+
+        # Reset error tracking
+        self.consecutive_errors = 0
+
+        logger.info("✅ FaceMeshProcessor cleaned up")

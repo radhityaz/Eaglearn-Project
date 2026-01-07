@@ -13,7 +13,9 @@
       "Bash(git clone:*)",
       "Bash(ping:*)",
       "Bash(netstat:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(dir:*)",
+      "Bash(git add:*)"
     ]
   },
   "outputStyle": "Explanatory"
