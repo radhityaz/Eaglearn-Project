@@ -41,3 +41,23 @@ def test_no_time_tracking_during_calibration():
     p._update_time_tracking("focused")
     assert s.focused_time_seconds == 0.0
     assert s.unfocused_time_seconds == 0.0
+
+
+def test_forced_unfocused_when_distraction_active():
+    from state_manager import SessionState
+    from improved_webcam_processor import ImprovedWebcamProcessor
+
+    s = SessionState()
+    p = ImprovedWebcamProcessor.__new__(ImprovedWebcamProcessor)
+    p.state = s
+    p.focus_score_ema = None
+    p.focus_score_smoothing_alpha = 0.22
+    p.focus_status_last_emitted = "focused"
+    p.focus_status_hysteresis = 6.0
+    p.focus_distracted_hysteresis = 4.0
+    p.forced_unfocused_score = 30.0
+    p._last_distraction_active = {"head_turn": True}
+
+    score, status = p._stabilize_focus(90.0, "focused")
+    assert status == "unfocused"
+    assert score <= 30.0

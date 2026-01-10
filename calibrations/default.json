@@ -1,0 +1,30 @@
+{
+  "gaze_offset_x": -0.0029404761904761913,
+  "gaze_offset_y": -0.11913690476190475,
+  "scale_factor": 2.0,
+  "screen_width": 1920,
+  "screen_height": 1009,
+  "user_id": "default",
+  "calibrated_at": "2026-01-10T15:47:53.329528",
+  "num_points": 168,
+  "screen_mapping": {
+    "x": [
+      -20152.692547768165,
+      1950.386165724592,
+      950.7023809523807
+    ],
+    "y": [
+      -2262.9587117521905,
+      2206.6069688990874,
+      508.14285714285705
+    ],
+    "rmse_x": 208.82376919605414,
+    "rmse_y": 266.0536599526777
+  },
+  "head_baseline_yaw": -0.91,
+  "head_baseline_pitch": -9.85,
+  "head_compensation_yaw_gain": 0.005061861565820026,
+  "head_compensation_yaw_r2": 0.473064487287316,
+  "head_compensation_pitch_gain": -0.03,
+  "head_compensation_pitch_r2": 0.16747412192767575
+}

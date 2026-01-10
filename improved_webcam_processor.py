@@ -206,6 +206,24 @@ class ImprovedWebcamProcessor:
         self.focus_status_last_emitted = None
         self.focus_status_candidate = None
         self.focus_status_candidate_since = None
+        self.focus_score_ema = None
+        self.focus_score_smoothing_alpha = float(
+            config.get("focus", "score_smoothing_alpha", default=0.22)
+        )
+        self.focus_status_hysteresis = float(
+            config.get("focus", "status_hysteresis", default=6.0)
+        )
+        self.focus_distracted_hysteresis = float(
+            config.get("focus", "distracted_hysteresis", default=4.0)
+        )
+        self.forced_unfocused_score = float(
+            config.get("focus", "forced_unfocused_score", default=30.0)
+        )
+        self.metric_smoothing_alpha = float(
+            config.get("focus", "metric_smoothing_alpha", default=0.25)
+        )
+        self._metric_ema = {}
+        self._last_distraction_active = {}
 
         self._distraction_states = {}
         self._last_distraction_event_time = 0.0
@@ -660,6 +678,28 @@ class ImprovedWebcamProcessor:
                         # Update all face metrics
                         for key, value in face_metrics.items():
                             if hasattr(self.state, key):
+                                if key in (
+                                    "head_yaw",
+                                    "head_pitch",
+                                    "head_roll",
+                                    "attention_score",
+                                    "eye_aspect_ratio",
+                                    "mouth_aspect_ratio",
+                                ):
+                                    try:
+                                        v = float(value)
+                                        prev = self._metric_ema.get(key)
+                                        a = float(self.metric_smoothing_alpha)
+                                        a = max(0.05, min(0.9, a))
+                                        if prev is None:
+                                            self._metric_ema[key] = v
+                                        else:
+                                            self._metric_ema[key] = (a * v) + (
+                                                (1.0 - a) * float(prev)
+                                            )
+                                        value = self._metric_ema[key]
+                                    except Exception:
+                                        pass
                                 setattr(self.state, key, value)
                         if bool(getattr(self.state, "face_mesh_processed", False)):
                             self.state.last_face_mesh_time = time.time()
@@ -667,15 +707,19 @@ class ImprovedWebcamProcessor:
                     self._update_rule_based_metrics()
 
                     # Calculate focus and detect distractions
-                    focus_score, raw_focus_status = self._calculate_focus_score()
-                    focus_status = self._debounce_focus_status(raw_focus_status)
                     distractions = self._detect_distractions()
+                    with self.state.lock:
+                        self.state.current_distractions = distractions
+
+                    raw_focus_score, raw_focus_status = self._calculate_focus_score()
+                    focus_score, focus_status = self._stabilize_focus(
+                        raw_focus_score, raw_focus_status
+                    )
                     mental_effort = self._calculate_mental_effort()
 
                     with self.state.lock:
                         self.state.focus_percentage = focus_score
                         self.state.focus_status = focus_status
-                        self.state.current_distractions = distractions
                         self.state.mental_effort = mental_effort
 
                     self._update_time_tracking(focus_status)
@@ -1114,7 +1158,11 @@ class ImprovedWebcamProcessor:
 
         penalty = 0.0
         if distractions:
-            penalty += min(0.25, 0.08 * len(distractions))
+            penalty += min(
+                float(config.get("focus", "max_distraction_penalty", default=0.45)),
+                float(config.get("focus", "distraction_penalty_per_event", default=0.14))
+                * len(distractions),
+            )
         if not calibration_applied:
             penalty += float(
                 config.get("focus", "no_calibration_penalty", default=0.05)
@@ -1125,6 +1173,21 @@ class ImprovedWebcamProcessor:
             penalty += float(config.get("focus", "low_light_penalty", default=0.05))
         if not mesh_recent:
             penalty += float(config.get("focus", "no_face_mesh_penalty", default=0.2))
+
+        head_pose_low_threshold = float(
+            config.get("focus", "head_pose_low_threshold", default=0.45)
+        )
+        if head_score < head_pose_low_threshold:
+            penalty += float(config.get("focus", "head_pose_low_penalty", default=0.2))
+
+        if mesh_recent and looking_at != "center":
+            penalty += float(config.get("focus", "gaze_offcenter_penalty", default=0.18))
+
+        attention_low_threshold = float(
+            config.get("focus", "attention_score_low_threshold", default=75)
+        )
+        if mesh_recent and attention_score < attention_low_threshold:
+            penalty += float(config.get("focus", "attention_low_penalty", default=0.12))
 
         score = 100.0 * clamp01(base_score * (1.0 - penalty))
 
@@ -1231,6 +1294,82 @@ class ImprovedWebcamProcessor:
                 return raw_status
 
         return self.focus_status_last_emitted or "unfocused"
+
+    def _stabilize_focus(self, raw_score: float, raw_status: str):
+        try:
+            raw_score = float(raw_score)
+        except Exception:
+            raw_score = 0.0
+
+        if raw_score <= 0.0 and (raw_status or "") == "unfocused":
+            self.focus_score_ema = 0.0
+            self.focus_status_last_emitted = "unfocused"
+            return 0.0, "unfocused"
+
+        active = self._last_distraction_active if isinstance(self._last_distraction_active, dict) else {}
+        if (
+            active.get("no_face")
+            or active.get("eyes_closed")
+            or active.get("head_turn")
+            or active.get("gaze_away")
+            or active.get("smartphone")
+        ):
+            self.focus_score_ema = min(
+                float(self.focus_score_ema) if self.focus_score_ema is not None else raw_score,
+                float(self.forced_unfocused_score),
+            )
+            self.focus_status_last_emitted = "unfocused"
+            return round(float(self.focus_score_ema), 2), "unfocused"
+
+        alpha = float(self.focus_score_smoothing_alpha)
+        alpha = max(0.05, min(0.9, alpha))
+        if self.focus_score_ema is None:
+            self.focus_score_ema = raw_score
+        else:
+            self.focus_score_ema = (alpha * raw_score) + ((1.0 - alpha) * float(self.focus_score_ema))
+
+        score = float(max(0.0, min(100.0, self.focus_score_ema)))
+
+        focused_threshold = float(config.get("focus", "focused_threshold", default=80))
+        distracted_threshold = float(config.get("focus", "distracted_threshold", default=50))
+        hysteresis = float(self.focus_status_hysteresis)
+        distracted_hysteresis = float(self.focus_distracted_hysteresis)
+
+        stable = str(self.focus_status_last_emitted or raw_status or "unfocused")
+        if stable not in ("focused", "distracted", "unfocused"):
+            stable = "unfocused"
+
+        if stable == "focused":
+            if score < (focused_threshold - hysteresis):
+                stable = "distracted" if score >= distracted_threshold else "unfocused"
+        else:
+            if score >= focused_threshold:
+                stable = "focused"
+            else:
+                if stable == "distracted" and score < (distracted_threshold - distracted_hysteresis):
+                    stable = "unfocused"
+                elif stable == "unfocused" and score >= (distracted_threshold + distracted_hysteresis):
+                    stable = "distracted"
+                else:
+                    stable = "distracted" if score >= distracted_threshold else "unfocused"
+
+        self.focus_status_last_emitted = stable
+
+        with self.state.lock:
+            existing = self.state.rule_metrics if isinstance(self.state.rule_metrics, dict) else {}
+            self.state.rule_metrics = {
+                **existing,
+                "focus_score_raw": float(raw_score),
+                "focus_score_smoothed": float(score),
+                "focus_thresholds": {
+                    "focused": float(focused_threshold),
+                    "distracted": float(distracted_threshold),
+                    "hysteresis": float(hysteresis),
+                    "distracted_hysteresis": float(distracted_hysteresis),
+                },
+            }
+
+        return round(score, 2), stable
 
     def _detect_distractions(self):
         now = time.time()
@@ -1346,7 +1485,11 @@ class ImprovedWebcamProcessor:
             yaw_abs = abs(head_yaw)
             raw_head_turn = yaw_abs > head_turn_threshold and attention_score < 85
             raw_signals["head_turn"] = bool(raw_head_turn)
-            active = update_gate("head_turn", bool(raw_head_turn), min_seconds)
+            active = update_gate(
+                "head_turn",
+                bool(raw_head_turn),
+                float(config.get("distractions", "head_turn_min_seconds", default=min_seconds)),
+            )
             active_signals["head_turn"] = active
             if active:
                 direction = "right" if head_yaw > 0 else "left"
@@ -1390,7 +1533,11 @@ class ImprovedWebcamProcessor:
                 and looking_at != "center"
             )
             raw_signals["gaze_away"] = bool(raw_gaze_away)
-            active = update_gate("gaze_away", bool(raw_gaze_away), min_seconds)
+            active = update_gate(
+                "gaze_away",
+                bool(raw_gaze_away),
+                float(config.get("distractions", "gaze_away_min_seconds", default=min_seconds)),
+            )
             active_signals["gaze_away"] = active
             if active:
                 distractions.append(
@@ -1487,6 +1634,8 @@ class ImprovedWebcamProcessor:
                 "distraction_active": active_signals,
             }
 
+        self._last_distraction_active = active_signals
+
         if distractions and (now - self._last_distraction_event_time) >= float(
             config.get("distractions", "event_log_cooldown_seconds", default=1.0)
         ):
@@ -1582,27 +1731,22 @@ class ImprovedWebcamProcessor:
             self.state.last_focus_status = focus_status
             return
 
-        # Calculate time elapsed since last update
         time_elapsed = current_time - self.state.last_tracking_update
 
-        # Update focused or unfocused time based on PREVIOUS status
         with self.state.lock:
-            if self.state.last_focus_status == "focused":
+            previous_status = self.state.last_focus_status
+
+            if focus_status == "focused":
                 self.state.focused_time_seconds += time_elapsed
             else:
                 self.state.unfocused_time_seconds += time_elapsed
 
-                # Track unfocus intervals for analytics
-                if (
-                    not hasattr(self.state, "current_unfocus_start")
-                    or self.state.current_unfocus_start is None
-                ):
-                    self.state.current_unfocus_start = self.state.last_tracking_update
-                    if self.state.first_unfocus_time is None:
-                        self.state.first_unfocus_time = self.state.last_tracking_update
+            if previous_status == "focused" and focus_status != "focused":
+                self.state.current_unfocus_start = self.state.last_tracking_update
+                if self.state.first_unfocus_time is None:
+                    self.state.first_unfocus_time = self.state.last_tracking_update
 
-            # If transitioning from unfocused to focused, record unfocus interval
-            if self.state.last_focus_status != "focused" and focus_status == "focused":
+            if previous_status != "focused" and focus_status == "focused":
                 if (
                     hasattr(self.state, "current_unfocus_start")
                     and self.state.current_unfocus_start is not None
@@ -1622,7 +1766,6 @@ class ImprovedWebcamProcessor:
                     self.state.last_unfocus_time = current_time
                     self.state.current_unfocus_start = None
 
-            # Update tracking state
             self.state.last_tracking_update = current_time
             self.state.last_focus_status = focus_status
 

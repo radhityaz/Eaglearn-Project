@@ -121,8 +121,20 @@ focus:
     mouth_aspect_ratio: 10
 
   # Status Thresholds
-  focused_threshold: 75  # Score >= 75% = focused
-  distracted_threshold: 50  # Score < 50% = drowsy
+  focused_threshold: 65  # Score >= 65% = focused
+  distracted_threshold: 45  # Score >= 45% = distracted, otherwise unfocused
+  score_smoothing_alpha: 0.22
+  status_hysteresis: 6.0
+  distracted_hysteresis: 4.0
+  metric_smoothing_alpha: 0.25
+  forced_unfocused_score: 30
+  distraction_penalty_per_event: 0.14
+  max_distraction_penalty: 0.45
+  head_pose_low_threshold: 0.45
+  head_pose_low_penalty: 0.20
+  gaze_offcenter_penalty: 0.18
+  attention_score_low_threshold: 75
+  attention_low_penalty: 0.12
   face_mesh_max_age_seconds: 0.8
   face_mesh_hard_fail_seconds: 2.5
   no_face_mesh_penalty: 0.2
@@ -178,6 +190,8 @@ distractions:
   stress_high_threshold: 0.7
   confusion_high_threshold: 0.7
   validation_min_seconds: 0.9
+  head_turn_min_seconds: 0.6
+  gaze_away_min_seconds: 0.6
   clear_grace_seconds: 1.2
   no_face_min_seconds: 0.6
   attention_score_threshold: 55
