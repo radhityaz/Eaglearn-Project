@@ -1,30 +1,31 @@
 {
-  "gaze_offset_x": -0.0029404761904761913,
-  "gaze_offset_y": -0.11913690476190475,
+  "gaze_offset_x": -0.0032781065088757413,
+  "gaze_offset_y": 0.09479881656804738,
   "scale_factor": 2.0,
   "screen_width": 1920,
   "screen_height": 1009,
+  "invert_y": true,
   "user_id": "default",
-  "calibrated_at": "2026-01-10T15:47:53.329528",
-  "num_points": 168,
+  "calibrated_at": "2026-01-10T16:10:50.625096",
+  "num_points": 169,
   "screen_mapping": {
     "x": [
-      -20152.692547768165,
-      1950.386165724592,
-      950.7023809523807
+      -22852.614520214393,
+      -1012.4533499070616,
+      964.2721893491124
     ],
     "y": [
-      -2262.9587117521905,
-      2206.6069688990874,
-      508.14285714285705
+      -2487.9335121725476,
+      -561.6255475757258,
+      505.95266272189343
     ],
-    "rmse_x": 208.82376919605414,
-    "rmse_y": 266.0536599526777
+    "rmse_x": 359.21965019538965,
+    "rmse_y": 278.9800551062706
   },
-  "head_baseline_yaw": -0.91,
-  "head_baseline_pitch": -9.85,
-  "head_compensation_yaw_gain": 0.005061861565820026,
-  "head_compensation_yaw_r2": 0.473064487287316,
-  "head_compensation_pitch_gain": -0.03,
-  "head_compensation_pitch_r2": 0.16747412192767575
+  "head_baseline_yaw": -0.46,
+  "head_baseline_pitch": -8.32,
+  "head_compensation_yaw_gain": -0.0011989031716092625,
+  "head_compensation_yaw_r2": 0.031826108180420865,
+  "head_compensation_pitch_gain": 0.002504569797646146,
+  "head_compensation_pitch_r2": 0.001004854608355421
 }

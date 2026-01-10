@@ -1646,6 +1646,20 @@
             }
         }
 
+        function showToast(message, type = 'info') {
+            const el = document.getElementById('toast');
+            if (!el) return;
+            el.textContent = message;
+            el.dataset.type = type;
+            el.style.display = 'block';
+            el.style.opacity = '1';
+            if (el._toastTimer) clearTimeout(el._toastTimer);
+            el._toastTimer = setTimeout(() => {
+                el.style.opacity = '0';
+                setTimeout(() => { el.style.display = 'none'; }, 250);
+            }, 2200);
+        }
+
         async function downloadLog() {
             try {
                 const response = await fetch('/api/logs/metrics/download', { method: 'GET' });
@@ -1655,7 +1669,7 @@
                         const data = await response.json();
                         if (data && data.message) message = data.message;
                     } catch (e) {}
-                    alert(message);
+                    showToast(message, 'error');
                     return;
                 }
 
@@ -1672,9 +1686,10 @@
                 a.click();
                 a.remove();
                 window.URL.revokeObjectURL(url);
+                showToast('Log siap diunduh', 'success');
             } catch (error) {
                 console.error('Error:', error);
-                alert('Gagal mengunduh log');
+                showToast('Gagal mengunduh log', 'error');
             }
         }
 
@@ -2042,6 +2057,7 @@
                             samples: [{
                                 x: micro.eye_gaze_x,
                                 y: micro.eye_gaze_y,
+                                face_scale: micro.face_scale,
                                 timestamp: now
                             }]
                         });
@@ -2066,7 +2082,8 @@
                             head_yaw: head.yaw,
                             head_pitch: head.pitch,
                             gaze_x: micro.eye_gaze_x,
-                            gaze_y: micro.eye_gaze_y
+                            gaze_y: micro.eye_gaze_y,
+                            face_scale: micro.face_scale
                         });
                         const headSamplesEl = document.getElementById('headSampleCount');
                         if (headSamplesEl) headSamplesEl.textContent = `Head: ${calibrationState.headSamples.length}`;
@@ -2107,7 +2124,12 @@
         </div>
     </div>
 
+    <div id="toast" data-type="info" style="display:none; position: fixed; right: 18px; bottom: 18px; z-index: 2000; padding: 10px 14px; border-radius: 10px; color: #fff; font-size: 14px; background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 10px 30px rgba(0,0,0,0.35); backdrop-filter: blur(6px); transition: opacity 0.25s ease;">
+    </div>
+
     <style>
+        #toast[data-type="success"] { background: rgba(22, 163, 74, 0.92); }
+        #toast[data-type="error"] { background: rgba(220, 38, 38, 0.92); }
         @keyframes pulse {
             0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
             50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.9; }

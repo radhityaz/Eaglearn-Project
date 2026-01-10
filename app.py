@@ -744,19 +744,25 @@ def handle_calibration_complete(data):
 
         baseline_yaw = None
         baseline_pitch = None
+        baseline_face_scale = None
         if isinstance(head_samples, list) and head_samples:
             center = [s for s in head_samples if isinstance(s, dict) and s.get("step") == "center"]
             center_yaw_vals = []
             center_pitch_vals = []
+            center_scale_vals = []
             for s in center:
                 yv = _safe_float(s.get("head_yaw"))
                 pv = _safe_float(s.get("head_pitch"))
+                sv = _safe_float(s.get("face_scale"))
                 if yv is not None:
                     center_yaw_vals.append(yv)
                 if pv is not None:
                     center_pitch_vals.append(pv)
+                if sv is not None:
+                    center_scale_vals.append(sv)
             baseline_yaw = _median(center_yaw_vals)
             baseline_pitch = _median(center_pitch_vals)
+            baseline_face_scale = _median(center_scale_vals)
 
         yaw_gain = None
         pitch_gain = None
@@ -807,6 +813,9 @@ def handle_calibration_complete(data):
             if pitch_r2 is not None and not math.isnan(pitch_r2):
                 calibration_data["head_compensation_pitch_r2"] = float(pitch_r2)
 
+        if baseline_face_scale is not None:
+            calibration_data["face_scale_baseline"] = float(baseline_face_scale)
+
         # Ensure calibration is persisted even if auto_save is disabled
         webcam.calibration.save_calibration(user_id)
 
@@ -836,6 +845,7 @@ def handle_calibration_complete(data):
             state.calibration_head_compensation_pitch_gain = calibration_data.get(
                 "head_compensation_pitch_gain", None
             )
+            state.calibration_face_scale = calibration_data.get("face_scale_baseline", None)
 
             mapping = calibration_data.get("screen_mapping") or {}
             if "x" in mapping and "y" in mapping:

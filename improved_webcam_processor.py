@@ -110,6 +110,9 @@ class ImprovedWebcamProcessor:
                         except Exception:
                             pass
                     self.state.calibration_head_compensation_pitch_gain = pitch_gain
+                    self.state.calibration_face_scale = existing_calibration.get(
+                        "face_scale_baseline", None
+                    )
                     mapping = existing_calibration.get("screen_mapping") or {}
                     if isinstance(mapping, dict) and "x" in mapping and "y" in mapping:
                         self.state.calibration_screen_mapping_x = mapping.get("x")

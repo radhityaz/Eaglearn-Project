@@ -52,6 +52,7 @@ class SessionState:
         self.frown_degree = 0.0  # Negative to positive, positive = sad
         self.eye_gaze_x = 0.0  # -1 to 1, left to right
         self.eye_gaze_y = 0.0  # -1 to 1, up to down
+        self.face_scale = 0.0
         self.confusion_level = 0.0  # 0-1, derived from micro-expressions
         self.stress_level = 0.0  # 0-1, derived from micro-expressions
         self.yawning_duration = 0  # Seconds of continuous yawning
@@ -115,6 +116,7 @@ class SessionState:
         self.calibration_head_pitch = 0.0
         self.calibration_head_compensation_yaw_gain = None
         self.calibration_head_compensation_pitch_gain = None
+        self.calibration_face_scale = None
         self.calibration_screen_width = None
         self.calibration_screen_height = None
         self.calibration_screen_mapping_x = None
@@ -193,6 +195,7 @@ class SessionState:
                         "frown_degree": round(self.frown_degree, 3),
                         "eye_gaze_x": round(self.eye_gaze_x, 3),
                         "eye_gaze_y": round(self.eye_gaze_y, 3),
+                        "face_scale": round(float(self.face_scale), 5),
                         "confusion_level": round(self.confusion_level, 3),
                         "stress_level": round(self.stress_level, 3),
                         "sleepiness_score": round(float(self.sleepiness_score), 2),

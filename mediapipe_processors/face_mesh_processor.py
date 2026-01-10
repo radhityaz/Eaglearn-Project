@@ -448,6 +448,7 @@ class FaceMeshProcessor:
             left_eye_width = left_eye_inner - left_eye_outer
             right_eye_width = right_eye_outer - right_eye_inner
             avg_eye_width = (left_eye_width + right_eye_width) / 2
+            metrics["face_scale"] = float(max(0.0, min(1.0, float(avg_eye_width))))
 
             left_eye_top_v = landmarks.landmark[159].y
             left_eye_bottom_v = landmarks.landmark[145].y
@@ -474,6 +475,37 @@ class FaceMeshProcessor:
 
             if bool(self.config.get("eye_tracking", "invert_y", default=False)):
                 raw_gaze_y = -raw_gaze_y
+
+            if hasattr(state, "calibration_face_scale") and state.calibration_face_scale:
+                if bool(
+                    self.config.get(
+                        "eye_tracking", "distance_compensation_enabled", default=True
+                    )
+                ):
+                    try:
+                        baseline = float(state.calibration_face_scale)
+                        current = float(metrics.get("face_scale", 0.0) or 0.0)
+                        if baseline > 1e-6 and current > 1e-6:
+                            ratio = baseline / current
+                            ratio_min = float(
+                                self.config.get(
+                                    "eye_tracking",
+                                    "distance_compensation_ratio_min",
+                                    default=0.75,
+                                )
+                            )
+                            ratio_max = float(
+                                self.config.get(
+                                    "eye_tracking",
+                                    "distance_compensation_ratio_max",
+                                    default=1.35,
+                                )
+                            )
+                            ratio = max(ratio_min, min(ratio_max, ratio))
+                            raw_gaze_x *= ratio
+                            raw_gaze_y *= ratio
+                    except Exception:
+                        pass
 
             if hasattr(state, "calibration_applied") and state.calibration_applied:
                 try:
