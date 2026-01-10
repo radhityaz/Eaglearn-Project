@@ -472,6 +472,9 @@ class FaceMeshProcessor:
                 else 0.0
             )
 
+            if bool(self.config.get("eye_tracking", "invert_y", default=False)):
+                raw_gaze_y = -raw_gaze_y
+
             if hasattr(state, "calibration_applied") and state.calibration_applied:
                 try:
                     base_yaw = float(getattr(state, "calibration_head_yaw", 0.0) or 0.0)

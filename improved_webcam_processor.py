@@ -72,14 +72,19 @@ class ImprovedWebcamProcessor:
         try:
             existing_calibration = self.calibration.load_calibration("default")
             if isinstance(existing_calibration, dict):
+                invert_y = bool(config.get("eye_tracking", "invert_y", default=False))
+                calibration_invert_y = bool(existing_calibration.get("invert_y", False))
                 with self.state.lock:
                     self.state.calibration_applied = True
                     self.state.calibration_gaze_offset_x = float(
                         existing_calibration.get("gaze_offset_x", 0.0) or 0.0
                     )
-                    self.state.calibration_gaze_offset_y = float(
+                    offset_y = float(
                         existing_calibration.get("gaze_offset_y", 0.0) or 0.0
                     )
+                    if invert_y and (not calibration_invert_y):
+                        offset_y = -offset_y
+                    self.state.calibration_gaze_offset_y = offset_y
                     self.state.calibration_scale_factor = float(
                         existing_calibration.get("scale_factor", 1.0) or 1.0
                     )
@@ -98,13 +103,31 @@ class ImprovedWebcamProcessor:
                     self.state.calibration_head_compensation_yaw_gain = (
                         existing_calibration.get("head_compensation_yaw_gain", None)
                     )
-                    self.state.calibration_head_compensation_pitch_gain = (
-                        existing_calibration.get("head_compensation_pitch_gain", None)
-                    )
+                    pitch_gain = existing_calibration.get("head_compensation_pitch_gain", None)
+                    if invert_y and (not calibration_invert_y) and pitch_gain is not None:
+                        try:
+                            pitch_gain = -float(pitch_gain)
+                        except Exception:
+                            pass
+                    self.state.calibration_head_compensation_pitch_gain = pitch_gain
                     mapping = existing_calibration.get("screen_mapping") or {}
                     if isinstance(mapping, dict) and "x" in mapping and "y" in mapping:
                         self.state.calibration_screen_mapping_x = mapping.get("x")
-                        self.state.calibration_screen_mapping_y = mapping.get("y")
+                        mapping_y = mapping.get("y")
+                        if (
+                            invert_y
+                            and (not calibration_invert_y)
+                            and isinstance(mapping_y, list)
+                            and len(mapping_y) >= 3
+                        ):
+                            try:
+                                ay = float(mapping_y[0])
+                                by = float(mapping_y[1])
+                                cy = float(mapping_y[2])
+                                mapping_y = [ay, -by, cy]
+                            except Exception:
+                                pass
+                        self.state.calibration_screen_mapping_y = mapping_y
         except Exception:
             pass
 

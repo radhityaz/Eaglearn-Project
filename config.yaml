@@ -146,6 +146,7 @@ eye_tracking:
   gaze_scale_x: 800  # Pixels per gaze unit
   gaze_scale_y: 450  # Pixels per gaze unit
   sensitivity_threshold: 0.18  # Lower = more sensitive
+  invert_y: true
 
   # Gaze Smoothing (reduce jitter)
   enable_smoothing: true

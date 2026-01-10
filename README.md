@@ -14,6 +14,7 @@ Eaglearn adalah sistem monitoring fokus real-time untuk aktivitas belajar/kerja 
 - Head pose (yaw/pitch/roll) + rule-based stress/confusion/drowsiness
 - Focus score + time tracking (focused/unfocused time)
 - Calibration gaze (wizard) + kompensasi head pose sederhana
+- Opsi pembalikan sumbu Y gaze (`eye_tracking.invert_y`) untuk device tertentu
 - Logging metrik sesi (JSONL) + tombol “Simpan Log”
 - Mode pause (privacy)
 
@@ -43,6 +44,12 @@ Skenario pre-release beta memakai `.venv_gpu` untuk menghindari mismatch environ
 Aplikasi berjalan di:
 - Web: `http://localhost:8080`
 
+Alternatif minimal:
+
+```powershell
+.\run_app.bat
+```
+
 ## Instalasi Lengkap
 
 Lihat [INSTALL.md](file:///d:/Eaglearn-Project/INSTALL.md).
@@ -51,6 +58,10 @@ Lihat [INSTALL.md](file:///d:/Eaglearn-Project/INSTALL.md).
 
 - Konfigurasi utama: [config.yaml](file:///d:/Eaglearn-Project/config.yaml)
 - Contoh env: [.env.example](file:///d:/Eaglearn-Project/.env.example)
+
+Pengaturan penting:
+- Jika arah top/bottom terbalik: ubah `eye_tracking.invert_y` (default: `true`)
+- Threshold fokus: `focus.focused_threshold` dan `focus.distracted_threshold`
 
 ## API (Ringkas)
 
@@ -63,6 +74,15 @@ Lihat [INSTALL.md](file:///d:/Eaglearn-Project/INSTALL.md).
 WebSocket:
 - `state_update`
 - `frame_update`
+
+## Logging
+
+File yang disimpan di folder `logs/`:
+- `app_YYYYMMDD.log`: log aplikasi Flask (rotating)
+- `metrics_<session_id>.jsonl`: snapshot metrik per ~1 detik (bisa diunduh via `GET /api/logs/metrics/download`)
+
+File non-log yang relevan:
+- `calibrations/<user_id>.json`: data kalibrasi gaze
 
 ## Panduan Darurat (Troubleshooting Flow)
 
@@ -93,6 +113,21 @@ Dokumen operasional VLM: [docs/VLM_OPERATIONAL.md](file:///d:/Eaglearn-Project/d
 - TensorFlow GPU di Windows sering tidak tersedia (gpus: `[]`), sementara PyTorch CUDA tetap bisa aktif.
 - VLM bersifat opsional dan membutuhkan dependency tambahan (`transformers`).
 
+## Development
+
+### Running Tests
+
+```bash
+pytest -q
+```
+
+### Code Quality
+
+```bash
+ruff check .
+mypy app.py improved_webcam_processor.py state_manager.py mediapipe_processors/face_mesh_processor.py
+```
+
 ## Kontribusi
 
 - PR dan issue diterima. Sertakan langkah reproduksi, log, dan spesifikasi perangkat.
@@ -100,55 +135,3 @@ Dokumen operasional VLM: [docs/VLM_OPERATIONAL.md](file:///d:/Eaglearn-Project/d
 ## Lisensi
 
 Lihat [LICENSE](file:///d:/Eaglearn-Project/LICENSE).
-- Check confidence threshold in config
-- See logs for error messages
-
-## Requirements
-
-### Core Dependencies
-
-- Python 3.11+
-- Flask 3.0+
-- Flask-SocketIO 5.3+
-- OpenCV 4.8+
-- MediaPipe 0.10+
-
-### ML Dependencies
-
-- DeepFace 0.0.79+ (emotion detection)
-- TensorFlow 2.15+ (DeepFace backend)
-- PyTorch + torchvision (EfficientNet)
-
-### Optional
-
-- CUDA-capable GPU (for acceleration)
-- POSTER++ weights (for 90% accuracy emotion detection)
-
-## Development
-
-### Running Tests
-
-```bash
-pytest tests/
-```
-
-### Code Quality
-
-```bash
-# Format code
-black app.py mediapipe_processors/
-
-# Lint code
-pylint app.py
-```
-
-## License
-
-See LICENSE file.
-
-## Acknowledgments
-
-- [MediaPipe](https://google.github.io/mediapipe/) - Face & pose detection
-- [DeepFace](https://github.com/serengil/deepface) - Emotion recognition
-- [PyTorch](https://pytorch.org/) - EfficientNet models
-- [POSTER++](https://github.com/AnnamTk/POSTER) - SOTA emotion detection (optional)

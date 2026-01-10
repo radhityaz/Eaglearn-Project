@@ -168,6 +168,7 @@ class CalibrationManager:
             "scale_factor": scale_factor,
             "screen_width": expected_screen_width,
             "screen_height": expected_screen_height,
+            "invert_y": bool(self.config.get("eye_tracking", "invert_y", default=False)),
             "user_id": getattr(self, "current_user", "default"),
             "calibrated_at": datetime.now().isoformat(),
             "num_points": len(self.calibration_points),
