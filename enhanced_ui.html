@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eaglearn - Enhanced Focus Monitoring</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .metric-card {
+            transition: all 0.3s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        .status-badge {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .focus-ring {
+            stroke-dasharray: 283;
+            stroke-dashoffset: 283;
+            animation: fillRing 1s ease-out forwards;
+        }
+        @keyframes fillRing {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+        .insight-card {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+            border-left: 4px solid #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <!-- Header -->
+        <header class="mb-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+                        Eaglearn Enhanced
+                    </h1>
+                    <span id="connectionStatus" class="px-3 py-1 bg-gray-800 rounded-full text-sm">
+                        🔄 Connecting...
+                    </span>
+                </div>
+                <div class="flex space-x-3">
+                    <button id="startBtn" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors">
+                        🎯 Start Monitoring
+                    </button>
+                    <button id="calibrateBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                        🎛️️ Calibrate
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Video Section -->
+            <section class="lg:col-span-2">
+                <div class="glass-card rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold">Live Feed</h2>
+                        <div class="flex items-center space-x-2">
+                            <span id="fps" class="text-sm text-gray-400">FPS: --</span>
+                            <span id="webcamStatus" class="px-2 py-1 bg-gray-800 rounded text-xs">📴</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Video Container -->
+                    <div class="relative bg-black rounded-lg overflow-hidden" style="padding-bottom: 56.25%;">
+                        <img id="videoFeed" class="absolute inset-0 w-full h-full object-cover" style="display: none;">
+                        <canvas id="videoCanvas" class="absolute inset-0 w-full h-full"></canvas>
+                        
+                        <!-- Gaze Point Overlay -->
+                        <div id="focusPoint" class="absolute w-4 h-4 rounded-full border-2 transition-all duration-100" 
+                             style="display: none; z-index: 10;">
+                        </div>
+                    </div>
+                    
+                    <!-- VLM Insights -->
+                    <div id="vlmInsights" class="mt-4 insight-card rounded-lg p-4 text-sm">
+                        <h3 class="font-semibold mb-2 text-blue-400">🤖 AI Insights</h3>
+                        <div id="insightsText" class="text-gray-300">Analyzing...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Metrics Panel -->
+            <aside class="space-y-6">
+                <!-- Focus Score Card -->
+                <div class="metric-card glass-card rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">Focus Score</h3>
+                        <span id="focusStatus" class="status-badge px-2 py-1 rounded text-xs">--</span>
+                    </div>
+                    
+                    <!-- Circular Progress -->
+                    <div class="relative w-32 h-32 mx-auto mb-4">
+                        <svg class="transform -rotate-90 w-32 h-32">
+                            <circle cx="64" cy="64" r="56" stroke="rgba(255,255,255,0.1)" stroke-width="12" fill="none"/>
+                            <circle id="focusRing" cx="64" cy="64" r="56" stroke="url(#gradient)" stroke-width="12" fill="none"
+                                    class="focus-ring transition-all duration-500"/>
+                            <defs>
+                                <linearGradient id="gradient">
+                                    <stop offset="0%" stop-color="#3b82f6"/>
+                                    <stop offset="100%" stop-color="#8b5cf6"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span id="focusPercentage" class="text-3xl font-bold">--%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Time Tracking -->
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div class="text-center">
+                            <div class="text-gray-400">Focused</div>
+                            <div id="focusedTime" class="text-xl font-semibold text-green-400">--:--</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-gray-400">Unfocused</div>
+                            <div id="unfocusedTime" class="text-xl font-semibold text-red-400">--:--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emotion & State Card -->
+                <div class="metric-card glass-card rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Cognitive State</h3>
+                    
+                    <div class="space-y-3">
+                        <!-- Emotion -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Emotion</span>
+                            <div class="flex items-center space-x-2">
+                                <span id="emotionEmoji" class="text-2xl">😐</span>
+                                <span id="emotionText" class="font-medium">--</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Mental Effort -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Mental Effort</span>
+                            <div class="flex-1 mx-3">
+                                <div class="bg-gray-700 rounded-full h-2">
+                                    <div id="mentalEffortBar" class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <span id="mentalEffortValue" class="text-sm">--%</span>
+                        </div>
+                        
+                        <!-- Cognitive Load -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Cognitive Load</span>
+                            <span id="cognitiveLoad" class="px-2 py-1 rounded text-xs">--</span>
+                        </div>
+                        
+                        <!-- Task Type -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Task</span>
+                            <span id="taskType" class="font-medium">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Chart -->
+                <div class="metric-card glass-card rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Focus Trend</h3>
+                    <div class="h-48">
+                        <canvas id="focusChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Pose Context -->
+                <div class="metric-card glass-card rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Activity Context</h3>
+                    
+                    <div class="space-y-3 text-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Pose</span>
+                            <span id="poseContext" class="font-medium">--</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Typing</span>
+                            <span id="typingIndicator" class="px-2 py-1 rounded text-xs">--</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Chin Rest</span>
+                            <span id="chinResting" class="font-medium">--</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Activity Level</span>
+                            <div class="flex-1 mx-3">
+                                <div class="bg-gray-700 rounded-full h-2">
+                                    <div id="activityLevelBar" class="bg-gradient-to-r from-green-500 to-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <span id="activityLevelValue" class="text-sm">--%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Distractions -->
+                <div class="metric-card glass-card rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Distractions</h3>
+                    <div id="distractionsList" class="space-y-2 text-sm">
+                        <div class="text-gray-500 text-center py-4">No distractions detected</div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script>
+        // Enhanced UI Controller
+        class EnhancedUI {
+            constructor() {
+                this.socket = io();
+                this.focusHistory = [];
+                this.maxHistoryPoints = 50;
+                this.focusChart = null;
+                this.vlmService = null;
+                this.lastVLMUpdate = 0;
+                
+                this.initializeChart();
+                this.bindEvents();
+                this.connectSocket();
+            }
+            
+            initializeChart() {
+                const ctx = document.getElementById('focusChart').getContext('2d');
+                this.focusChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Focus %',
+                            data: [],
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: { color: '#9ca3af' }
+                            },
+                            x: {
+                                ticks: { color: '#9ca3af' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+            
+            bindEvents() {
+                document.getElementById('startBtn').addEventListener('click', () => this.toggleSession());
+                document.getElementById('calibrateBtn').addEventListener('click', () => this.startCalibration());
+            }
+            
+            connectSocket() {
+                this.socket.on('connect', () => {
+                    document.getElementById('connectionStatus').textContent = '🟢 Connected';
+                    document.getElementById('connectionStatus').className = 'px-3 py-1 bg-green-900 rounded-full text-sm';
+                });
+                
+                this.socket.on('disconnect', () => {
+                    document.getElementById('connectionStatus').textContent = '🔴 Disconnected';
+                    document.getElementById('connectionStatus').className = 'px-3 py-1 bg-red-900 rounded-full text-sm';
+                });
+                
+                this.socket.on('frame_update', (data) => this.updateUI(data));
+                this.socket.on('vlm_analysis', (data) => this.updateVLMInsights(data));
+            }
+            
+            updateUI(data) {
+                const state = data.state;
+                
+                // Update video
+                if (data.frame) {
+                    const img = document.getElementById('videoFeed');
+                    img.src = 'data:image/jpeg;base64,' + data.frame;
+                    img.style.display = 'block';
+                    document.getElementById('videoCanvas').style.display = 'none';
+                }
+                
+                // Update metrics
+                this.updateFocusMetrics(state);
+                this.updateCognitiveState(state);
+                this.updateActivityContext(state);
+                this.updateDistractions(state);
+                this.updateStatusIndicators(state);
+                
+                // Update chart
+                this.updateFocusChart(state.focus_percentage);
+                
+                // Request VLM analysis periodically
+                this.requestVLMAnalysis(state);
+            }
+            
+            updateFocusMetrics(state) {
+                const focus = state.focus_percentage || 0;
+                const status = state.focus_status || 'unknown';
+                
+                // Update focus ring
+                const ring = document.getElementById('focusRing');
+                const circumference = 2 * Math.PI * 56;
+                const offset = circumference - (focus / 100) * circumference;
+                ring.style.strokeDashoffset = offset;
+                
+                // Update text
+                document.getElementById('focusPercentage').textContent = `${Math.round(focus)}%`;
+                document.getElementById('focusStatus').textContent = status;
+                
+                // Status color
+                const statusColors = {
+                    'focused': 'bg-green-600',
+                    'distracted': 'bg-yellow-600',
+                    'drowsy': 'bg-red-600'
+                };
+                document.getElementById('focusStatus').className = `status-badge px-2 py-1 rounded text-xs ${statusColors[status] || 'bg-gray-600'}`;
+                
+                // Update time
+                const focusedTime = this.formatDuration(state.focused_time_seconds || 0);
+                const unfocusedTime = this.formatDuration(state.unfocused_time_seconds || 0);
+                document.getElementById('focusedTime').textContent = focusedTime;
+                document.getElementById('unfocusedTime').textContent = unfocusedTime;
+            }
+            
+            updateCognitiveState(state) {
+                // Emotion
+                const emotion = state.emotion || 'neutral';
+                const emotionEmojis = {
+                    'happy': '😊', 'sad': '😢', 'angry': '😠', 
+                    'surprised': '😲', 'fear': '😨', 'neutral': '😐'
+                };
+                document.getElementById('emotionEmoji').textContent = emotionEmojis[emotion] || '😐';
+                document.getElementById('emotionText').textContent = emotion;
+                
+                // Mental effort
+                const mentalEffort = (state.mental_effort || 0) * 100;
+                document.getElementById('mentalEffortBar').style.width = `${mentalEffort}%`;
+                document.getElementById('mentalEffortValue').textContent = `${Math.round(mentalEffort)}%`;
+                
+                // Blink rate
+                const blinkRate = state.blink_rate || 0;
+                document.getElementById('blinkRate').textContent = blinkRate;
+            }
+            
+            updateActivityContext(state) {
+                // Pose context
+                const poseContext = state.posture_context || 'unknown';
+                document.getElementById('poseContext').textContent = poseContext.replace('_', ' ');
+                
+                // Typing indicator
+                const typing = state.typing || false;
+                const typingEl = document.getElementById('typingIndicator');
+                typingEl.textContent = typing ? '⌨️ Typing' : '🖱️ Idle';
+                typingEl.className = typing ? 'px-2 py-1 rounded text-xs bg-blue-600' : 'px-2 py-1 rounded text-xs bg-gray-600';
+                
+                // Chin resting
+                const chinResting = (state.chin_resting || 0) * 100;
+                document.getElementById('chinResting').textContent = `${Math.round(chinResting)}%`;
+                
+                // Activity level
+                const activityLevel = (state.activity_level || 0) * 100;
+                document.getElementById('activityLevelBar').style.width = `${activityLevel}%`;
+                document.getElementById('activityLevelValue').textContent = `${Math.round(activityLevel)}%`;
+            }
+            
+            updateDistractions(state) {
+                const distractions = state.current_distractions || [];
+                const container = document.getElementById('distractionsList');
+                
+                if (distractions.length === 0) {
+                    container.innerHTML = '<div class="text-gray-500 text-center py-4">No distractions detected</div>';
+                } else {
+                    container.innerHTML = distractions.slice(0, 3).map(d => 
+                        `<div class="flex items-center space-x-2 p-2 bg-yellow-900 bg-opacity-20 rounded">
+                            <span>⚠️</span>
+                            <span class="flex-1">${d}</span>
+                        </div>`
+                    ).join('');
+                }
+            }
+            
+            updateStatusIndicators(state) {
+                // FPS
+                document.getElementById('fps').textContent = `FPS: ${Math.round(state.fps || 0)}`;
+                
+                // Webcam status
+                const webcamStatus = document.getElementById('webcamStatus');
+                if (state.face_detected) {
+                    webcamStatus.textContent = '🟢 Active';
+                    webcamStatus.className = 'px-2 py-1 rounded text-xs bg-green-600';
+                } else {
+                    webcamStatus.textContent = '🔴 No Face';
+                    webcamStatus.className = 'px-2 py-1 rounded text-xs bg-red-600';
+                }
+            }
+            
+            updateFocusChart(focusValue) {
+                const now = new Date().toLocaleTimeString();
+                this.focusHistory.push({ time: now, value: focusValue });
+                
+                if (this.focusHistory.length > this.maxHistoryPoints) {
+                    this.focusHistory.shift();
+                }
+                
+                this.focusChart.data.labels = this.focusHistory.map(h => h.time);
+                this.focusChart.data.datasets[0].data = this.focusHistory.map(h => h.value);
+                this.focusChart.update('none');
+            }
+            
+            requestVLMAnalysis(state) {
+                const now = Date.now();
+                if (now - this.lastVLMUpdate < 5000) return; // Throttle to every 5 seconds
+                
+                // This would trigger VLM analysis on the backend
+                this.socket.emit('request_vlm_analysis', {
+                    frame_available: true,
+                    current_state: state
+                });
+                
+                this.lastVLMUpdate = now;
+            }
+            
+            updateVLMInsights(analysis) {
+                if (!analysis) return;
+                
+                const insights = [];
+                
+                // Cognitive load
+                const load = analysis.cognitive_load || 'medium';
+                const loadEmoji = { 'low': '🟢', 'medium': '🟡', 'high': '🔴' }[load] || '⚪';
+                insights.push(`Cognitive Load: ${loadEmoji} ${load.charAt(0).toUpperCase() + load.slice(1)}`);
+                
+                // Engagement
+                const engagement = analysis.engagement_type || 'casual';
+                const engagementEmoji = {
+                    'deep_work': '🎯', 'casual': '💻', 'distracted': '📱', 'fatigued': '😴'
+                }[engagement] || '👤';
+                insights.push(`Engagement: ${engagementEmoji} ${engagement.replace('_', ' ').charAt(0).toUpperCase() + engagement.replace('_', ' ').slice(1)}`);
+                
+                // Task
+                const task = analysis.task_inference || 'unknown';
+                const taskEmoji = {
+                    'coding': '💻', 'reading': '📖', 'watching': '👀', 'thinking': '🤔'
+                }[task] || '❓';
+                insights.push(`Task: ${taskEmoji} ${task.charAt(0).toUpperCase() + task.slice(1)}`);
+                
+                // Action needed
+                if (analysis.intervention_needed) {
+                    const action = analysis.suggested_action || 'Take a break';
+                    insights.push(`⚠️ Suggestion: ${action}`);
+                }
+                
+                document.getElementById('insightsText').innerHTML = insights.join(' | ');
+            }
+            
+            formatDuration(seconds) {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const secs = Math.floor(seconds % 60);
+                
+                if (hours > 0) {
+                    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                } else {
+                    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+                }
+            }
+            
+            toggleSession() {
+                const btn = document.getElementById('startBtn');
+                const isRunning = btn.textContent.includes('Stop');
+                
+                if (isRunning) {
+                    this.socket.emit('stop_session');
+                    btn.textContent = '🎯 Start Monitoring';
+                    btn.className = 'px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors';
+                } else {
+                    this.socket.emit('start_session');
+                    btn.textContent = '⏹️ Stop Monitoring';
+                    btn.className = 'px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors';
+                }
+            }
+            
+            startCalibration() {
+                // This would trigger the existing calibration system
+                this.socket.emit('start_calibration');
+            }
+        }
+        
+        // Initialize enhanced UI
+        const enhancedUI = new EnhancedUI();
+    </script>
+</body>
+</html>

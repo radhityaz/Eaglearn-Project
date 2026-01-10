@@ -1,6 +1,7 @@
 """
 Simple Camera Test - No ML dependencies
 """
+
 import cv2
 import sys
 
@@ -46,14 +47,14 @@ for i in range(10):
         if i == 0:
             print(f"   Frame 1: {frame.shape} - ✅")
     else:
-        print(f"   Frame {i+1}: ❌ Failed to read")
+        print(f"   Frame {i + 1}: ❌ Failed to read")
         cap.release()
         sys.exit(1)
 
 print("   ✅ All frames captured successfully")
 
 # Save a test frame
-cv2.imwrite('test_camera_simple.jpg', frame)
+cv2.imwrite("test_camera_simple.jpg", frame)
 print("\n4. Test frame saved as 'test_camera_simple.jpg'")
 
 cap.release()

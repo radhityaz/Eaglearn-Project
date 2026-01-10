@@ -5,8 +5,6 @@ Membantu proses calibration dengan mudah
 
 import requests
 import time
-import json
-import sys
 
 BASE_URL = "http://127.0.0.1:8080"
 
@@ -28,7 +26,7 @@ def check_server():
     try:
         response = requests.get(f"{BASE_URL}/api/metrics", timeout=2)
         return response.status_code == 200
-    except:
+    except Exception:
         return False
 
 
@@ -37,9 +35,7 @@ def start_calibration(user_id="default"):
     print_step(1, "Starting Calibration Session...")
 
     response = requests.post(
-        f"{BASE_URL}/api/calibration/start",
-        json={"user_id": user_id},
-        timeout=5
+        f"{BASE_URL}/api/calibration/start", json={"user_id": user_id}, timeout=5
     )
 
     if response.status_code == 200:
@@ -58,12 +54,16 @@ def get_current_gaze():
         if response.status_code == 200:
             data = response.json()
             return {
-                'gaze_x': data.get('facial_metrics', {}).get('micro_expressions', {}).get('eye_gaze_x', 0),
-                'gaze_y': data.get('facial_metrics', {}).get('micro_expressions', {}).get('eye_gaze_y', 0),
-                'screen_x': data.get('eye_tracking', {}).get('screen_x', 0),
-                'screen_y': data.get('eye_tracking', {}).get('screen_y', 0),
+                "gaze_x": data.get("facial_metrics", {})
+                .get("micro_expressions", {})
+                .get("eye_gaze_x", 0),
+                "gaze_y": data.get("facial_metrics", {})
+                .get("micro_expressions", {})
+                .get("eye_gaze_y", 0),
+                "screen_x": data.get("eye_tracking", {}).get("screen_x", 0),
+                "screen_y": data.get("eye_tracking", {}).get("screen_y", 0),
             }
-    except:
+    except Exception:
         pass
     return None
 
@@ -72,7 +72,7 @@ def add_calibration_point(screen_x, screen_y, label=""):
     """Add a calibration point"""
     print(f"\n  📍 {label}")
     print(f"     Screen Position: ({screen_x}, {screen_y})")
-    print(f"     Please look at this position on your screen...")
+    print("     Please look at this position on your screen...")
 
     # Countdown
     for i in range(3, 0, -1):
@@ -92,20 +92,20 @@ def add_calibration_point(screen_x, screen_y, label=""):
             json={
                 "screen_x": screen_x,
                 "screen_y": screen_y,
-                "gaze_x": gaze['gaze_x'],
-                "gaze_y": gaze['gaze_y']
+                "gaze_x": gaze["gaze_x"],
+                "gaze_y": gaze["gaze_y"],
             },
-            timeout=5
+            timeout=5,
         )
 
         if response.status_code == 200:
-            print(f"     ✅ Point recorded!")
+            print("     ✅ Point recorded!")
             return True
         else:
             print(f"     ❌ Error: {response.text}")
             return False
     else:
-        print(f"     ❌ Could not get gaze data")
+        print("     ❌ Could not get gaze data")
         return False
 
 
@@ -113,17 +113,14 @@ def calculate_calibration():
     """Calculate and save calibration"""
     print_step(2, "Calculating Calibration Data...")
 
-    response = requests.post(
-        f"{BASE_URL}/api/calibration/calculate",
-        timeout=5
-    )
+    response = requests.post(f"{BASE_URL}/api/calibration/calculate", timeout=5)
 
     if response.status_code == 200:
         data = response.json()
-        calibration = data.get('calibration', {})
-        print(f"✅ Calibration calculated successfully!")
-        print(f"\n   Calibration Results:")
-        print(f"   ─────────────────────────────────")
+        calibration = data.get("calibration", {})
+        print("✅ Calibration calculated successfully!")
+        print("\n   Calibration Results:")
+        print("   ─────────────────────────────────")
         print(f"   Gaze Offset X: {calibration.get('gaze_offset_x', 0):.4f}")
         print(f"   Gaze Offset Y: {calibration.get('gaze_offset_y', 0):.4f}")
         print(f"   Scale Factor:   {calibration.get('scale_factor', 1.0):.4f}")
@@ -148,12 +145,10 @@ def run_9_point_calibration():
         (0, 0, "Top-Left Corner"),
         (screen_width // 2, 0, "Top-Center"),
         (screen_width, 0, "Top-Right Corner"),
-
         # Middle row
         (0, screen_height // 2, "Middle-Left"),
         (screen_width // 2, screen_height // 2, "CENTER - Look Here!"),
         (screen_width, screen_height // 2, "Middle-Right"),
-
         # Bottom row
         (0, screen_height, "Bottom-Left Corner"),
         (screen_width // 2, screen_height, "Bottom-Center"),
@@ -209,7 +204,7 @@ def test_gaze_tracking():
 
     for screen_x, screen_y, label in test_positions:
         print(f"\n  📍 {label}: ({screen_x}, {screen_y})")
-        print(f"     Please look at this position...")
+        print("     Please look at this position...")
 
         for i in range(3, 0, -1):
             print(f"     {i}...", end=" ", flush=True)
@@ -217,23 +212,25 @@ def test_gaze_tracking():
 
         gaze = get_current_gaze()
         if gaze:
-            detected_x = gaze['screen_x']
-            detected_y = gaze['screen_y']
+            detected_x = gaze["screen_x"]
+            detected_y = gaze["screen_y"]
 
             # Calculate error
             error_x = abs(detected_x - screen_x)
             error_y = abs(detected_y - screen_y)
-            error_total = (error_x ** 2 + error_y ** 2) ** 0.5
+            error_total = (error_x**2 + error_y**2) ** 0.5
 
             print(f"     Detected: ({detected_x}, {detected_y})")
-            print(f"     Error: X={error_x:.0f}px, Y={error_y:.0f}px, Total={error_total:.0f}px")
+            print(
+                f"     Error: X={error_x:.0f}px, Y={error_y:.0f}px, Total={error_total:.0f}px"
+            )
 
             if error_total < 100:
-                print(f"     ✅ Good accuracy!")
+                print("     ✅ Good accuracy!")
             elif error_total < 200:
-                print(f"     ⚠️  Moderate accuracy (expected with iris-based tracking)")
+                print("     ⚠️  Moderate accuracy (expected with iris-based tracking)")
             else:
-                print(f"     ❌ Poor accuracy - recalibration recommended")
+                print("     ❌ Poor accuracy - recalibration recommended")
 
 
 def main():
@@ -286,4 +283,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
+
         traceback.print_exc()

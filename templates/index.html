@@ -98,6 +98,15 @@
         .header-actions {
             display: flex;
             gap: var(--space-sm);
+            align-items: center;
+        }
+
+        .env-indicator {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: right;
+            max-width: 360px;
+            line-height: 1.3;
         }
 
         /* Buttons - Modern, Minimal */
@@ -138,15 +147,37 @@
             cursor: not-allowed;
         }
 
+        .select {
+            background: var(--card-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 6px 10px;
+            font-size: 12px;
+            height: 34px;
+        }
+
         /* Grid Layout - Optimized */
+        .top-grid {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: var(--space-lg);
+            align-items: start;
+            margin-bottom: var(--space-lg);
+        }
+
         .main-grid {
             display: grid;
-            grid-template-columns: 1fr 450px;
+            grid-template-columns: 2fr 3fr;
             gap: var(--space-lg);
             align-items: start;
         }
 
-        @media (max-width: 1200px) {
+        @media (max-width: 900px) {
+            .top-grid {
+                grid-template-columns: 1fr;
+            }
+
             .main-grid {
                 grid-template-columns: 1fr;
             }
@@ -154,7 +185,7 @@
 
         @media (min-width: 1600px) {
             .main-grid {
-                grid-template-columns: 1fr 500px;
+                grid-template-columns: 2fr 3fr;
             }
         }
 
@@ -215,6 +246,264 @@
             gap: var(--space-lg);
         }
 
+        .focus-floating {
+            position: absolute;
+            left: 50%;
+            bottom: 14px;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(10px);
+            border-radius: 999px;
+            padding: 10px 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 220px;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .focus-bar {
+            position: fixed;
+            left: 24px;
+            top: 120px;
+            z-index: 1200;
+            width: 360px;
+            max-width: calc(100vw - 32px);
+            background: rgba(23, 23, 23, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 14px;
+            backdrop-filter: blur(14px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+            overflow: hidden;
+            transform: translate3d(0, 0, 0);
+            transition: height 180ms ease, opacity 180ms ease, transform 180ms ease;
+        }
+
+        .focus-bar.is-dragging {
+            transition: none;
+            cursor: grabbing;
+            user-select: none;
+        }
+
+        .focus-bar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            cursor: grab;
+        }
+
+        .focus-bar-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+        }
+
+        .status-dot.on { background: var(--success); }
+        .status-dot.off { background: var(--text-muted); }
+        .status-dot.warn { background: var(--warning); }
+        .status-dot.err { background: var(--danger); }
+
+        .focus-bar-actions {
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .icon-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(0, 0, 0, 0.18);
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 120ms ease, transform 120ms ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover { background: rgba(0, 0, 0, 0.3); }
+        .icon-btn:active { transform: scale(0.98); }
+
+        .focus-bar-body {
+            padding: 12px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .focus-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .focus-value {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.6px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .focus-status-pill {
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: var(--text-secondary);
+            background: rgba(0, 0, 0, 0.18);
+        }
+
+        .focus-status-pill.focused { color: var(--success); border-color: rgba(16, 185, 129, 0.35); }
+        .focus-status-pill.distracted { color: var(--warning); border-color: rgba(245, 158, 11, 0.35); }
+        .focus-status-pill.unfocused { color: var(--danger); border-color: rgba(239, 68, 68, 0.35); }
+
+        .focus-bar-meter {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .focus-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--accent);
+            border-radius: 999px;
+            transition: width 180ms ease;
+        }
+
+        .vlm-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            user-select: none;
+        }
+
+        .toggle input {
+            width: 40px;
+            height: 22px;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 999px;
+            position: relative;
+            outline: none;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            transition: background 140ms ease, border-color 140ms ease;
+        }
+
+        .toggle input::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.85);
+            transition: transform 140ms ease;
+        }
+
+        .toggle input:checked {
+            background: rgba(16, 185, 129, 0.25);
+            border-color: rgba(16, 185, 129, 0.35);
+        }
+
+        .toggle input:checked::after { transform: translateX(18px); }
+
+        .vlm-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .focus-bar.is-minimized .focus-bar-body {
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            overflow: hidden;
+            transition: max-height 180ms ease, opacity 180ms ease, padding 180ms ease;
+        }
+
+        .focus-bar .focus-bar-body {
+            max-height: 260px;
+            opacity: 1;
+            transition: max-height 180ms ease, opacity 180ms ease, padding 180ms ease;
+        }
+
+        @media (max-width: 520px) {
+            .focus-bar {
+                left: 12px;
+                top: 96px;
+                width: calc(100vw - 24px);
+            }
+            .focus-value { font-size: 22px; }
+        }
+
+        .focus-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .focus-pill-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--warning);
+        }
+
+        .focus-pill.focused .focus-pill-dot { background: var(--success); }
+        .focus-pill.distracted .focus-pill-dot { background: var(--warning); }
+        .focus-pill.unfocused .focus-pill-dot { background: var(--danger); }
+
+        .focus-pill-value {
+            font-size: 16px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-primary);
+        }
+
         .overlay-item {
             display: flex;
             align-items: center;
@@ -244,13 +533,22 @@
             padding: var(--space-lg);
             border-radius: var(--radius-md);
             text-align: center;
+            border: 1px solid var(--border);
+            min-height: 104px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .stat-value {
-            font-size: 36px;
+            font-size: clamp(20px, 2.2vw, 36px);
             font-weight: 700;
             margin-bottom: var(--space-xs);
             letter-spacing: -1px;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .stat-label {
@@ -258,6 +556,68 @@
             color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 520px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .kv-grid {
+            display: grid;
+            gap: 6px;
+            font-size: 12px;
+            line-height: 1.35;
+            color: var(--text-secondary);
+        }
+
+        .kv-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: baseline;
+        }
+
+        .kv-key {
+            color: var(--text-muted);
+        }
+
+        .kv-val {
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-md);
+            font-size: 12px;
+        }
+
+        .metric-item {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: rgba(0, 0, 0, 0.15);
+        }
+
+        .metric-label {
+            color: var(--text-muted);
+            font-size: 11px;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            color: var(--text-primary);
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+
+        @media (max-width: 520px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Focus Meter */
@@ -422,6 +782,11 @@
             border-radius: 50%;
             animation: pulse 2s ease-in-out infinite;
         }
+
+        .ai-panel-body {
+            max-height: 240px;
+            overflow: auto;
+        }
     </style>
 </head>
 <body>
@@ -433,8 +798,20 @@
                 <div class="logo-text">Eaglearn <span>Focus Monitor</span></div>
             </div>
             <div class="header-actions">
+                <div id="envIndicator" class="env-indicator">Env: loading...</div>
+                <select id="qualityPreset" class="select" onchange="setQualityPreset(this.value)">
+                    <option value="high">Quality: High</option>
+                    <option value="balanced" selected>Quality: Balanced</option>
+                    <option value="low">Quality: Low</option>
+                </select>
                 <button id="calibrateBtn" class="btn btn-secondary" onclick="startCalibration()">
                     Calibrate Gaze
+                </button>
+                <button id="saveLogBtn" class="btn btn-secondary" onclick="downloadLog()">
+                    Simpan Log
+                </button>
+                <button id="overlayBtn" class="btn btn-secondary" onclick="toggleFaceMeshOverlay()">
+                    Overlay: Off
                 </button>
                 <button id="toggleBtn" class="btn btn-secondary" onclick="toggleProcessing()">
                     Pause
@@ -455,11 +832,9 @@
             </div>
         </div>
 
-        <!-- Main Grid -->
-        <div class="main-grid">
-            <!-- Left Column - Webcam -->
+        <div class="top-grid">
             <div>
-                <div class="card">
+                <div class="card" style="margin-bottom: var(--space-lg);">
                     <div class="card-header">
                         <div class="card-title">
                             <span id="recordingIndicator" class="recording-indicator" style="display:none"></span>
@@ -469,6 +844,13 @@
                     </div>
                     <div id="webcam-container">
                         <img id="webcam-feed" src="" alt="Camera feed will appear here">
+                        <div id="focusFloating" class="focus-floating" style="display:none">
+                            <div id="focusFloatingPill" class="focus-pill distracted">
+                                <span class="focus-pill-dot"></span>
+                                <span id="focusFloatingLabel">Focus</span>
+                            </div>
+                            <div id="focusFloatingValue" class="focus-pill-value">0%</div>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="webcam-overlay">
@@ -488,27 +870,12 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Right Column - Stats -->
             <div>
-                <!-- Stats Grid -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="focusPercentage">0%</div>
-                        <div class="stat-label">Focus Score</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="focusedTime">00:00:00</div>
-                        <div class="stat-label">Focused Time</div>
-                    </div>
-                </div>
-
-                <!-- AI Analysis & Suggestions - MOVED TO TOP -->
                 <div class="card" style="margin-bottom: var(--space-lg);">
                     <div class="card-header">
                         <div class="card-title">🤖 AI Analysis & Suggestions</div>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body ai-panel-body">
                         <div id="interpretation" style="margin-bottom: var(--space-md);">
                             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">📊 Interpretation:</div>
                             <div id="interpretationText" style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
@@ -521,11 +888,16 @@
                                 Start monitoring to receive personalized suggestions
                             </div>
                         </div>
+                        <div style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border);">
+                            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">📏 Rule-based metrics:</div>
+                            <div id="ruleMetricsText" style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                                Waiting for data...
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Focus Meter -->
-                <div class="card" style="margin-bottom: var(--space-lg);">
+                <div class="card" style="margin-bottom: var(--space-lg); display:none">
                     <div class="card-header">
                         <div class="card-title">Focus Level</div>
                         <span id="focusStatus" class="badge badge-warning">Unknown</span>
@@ -543,7 +915,29 @@
                     </div>
                 </div>
 
-                <!-- Emotion -->
+                <div class="stats-grid" style="margin-bottom: var(--space-lg);">
+                    <div class="stat-card">
+                        <div class="stat-value" id="focusPercentage">0%</div>
+                        <div class="stat-label">Focus Score</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="focusedTime">00:00:00</div>
+                        <div class="stat-label">Focused Time</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="mentalEffort">0%</div>
+                        <div class="stat-label">Mental Effort</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="unfocusedTime">00:00:00</div>
+                        <div class="stat-label">Unfocused Time</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div>
                 <div class="card" style="margin-bottom: var(--space-lg);">
                     <div class="card-header">
                         <div class="card-title">Emotion Detection</div>
@@ -559,17 +953,19 @@
                         </div>
                         <div style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border);">
                             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: var(--space-xs);">All Emotion Scores:</div>
-                            <div id="emotionScores" style="font-size: 12px; line-height: 1.8; color: var(--text-secondary);">
-                                <div>Happy: <span id="scoreHappy">0%</span></div>
-                                <div>Sad: <span id="scoreSad">0%</span></div>
-                                <div>Angry: <span id="scoreAngry">0%</span></div>
-                                <div>Surprised: <span id="scoreSurprised">0%</span></div>
-                                <div>Neutral: <span id="scoreNeutral">0%</span></div>
+                            <div id="emotionScores" class="kv-grid">
+                                <div class="kv-row"><span class="kv-key">Happy</span><span class="kv-val" id="scoreHappy">0%</span></div>
+                                <div class="kv-row"><span class="kv-key">Sad</span><span class="kv-val" id="scoreSad">0%</span></div>
+                                <div class="kv-row"><span class="kv-key">Angry</span><span class="kv-val" id="scoreAngry">0%</span></div>
+                                <div class="kv-row"><span class="kv-key">Surprised</span><span class="kv-val" id="scoreSurprised">0%</span></div>
+                                <div class="kv-row"><span class="kv-key">Neutral</span><span class="kv-val" id="scoreNeutral">0%</span></div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
+            <div>
                 <!-- Gaze Tracking -->
                 <div class="card" style="margin-bottom: var(--space-lg);">
                     <div class="card-header">
@@ -601,22 +997,22 @@
                         <div class="card-title">Head & Body Pose</div>
                     </div>
                     <div class="card-body">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); font-size: 12px;">
-                            <div>
-                                <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 4px;">Head Yaw</div>
-                                <div style="color: var(--text-primary); font-weight: 500;" id="headYaw">0°</div>
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-label">Head Yaw</div>
+                                <div class="metric-value" id="headYaw">0°</div>
                             </div>
-                            <div>
-                                <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 4px;">Head Pitch</div>
-                                <div style="color: var(--text-primary); font-weight: 500;" id="headPitch">0°</div>
+                            <div class="metric-item">
+                                <div class="metric-label">Head Pitch</div>
+                                <div class="metric-value" id="headPitch">0°</div>
                             </div>
-                            <div>
-                                <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 4px;">Head Roll</div>
-                                <div style="color: var(--text-primary); font-weight: 500;" id="headRoll">0°</div>
+                            <div class="metric-item">
+                                <div class="metric-label">Head Roll</div>
+                                <div class="metric-value" id="headRoll">0°</div>
                             </div>
-                            <div>
-                                <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 4px;">Posture Score</div>
-                                <div style="color: var(--text-primary); font-weight: 500;" id="postureScore">0%</div>
+                            <div class="metric-item">
+                                <div class="metric-label">Posture Score</div>
+                                <div class="metric-value" id="postureScore">0%</div>
                             </div>
                         </div>
                     </div>
@@ -628,22 +1024,34 @@
                         <div class="card-title">Micro-expressions</div>
                     </div>
                     <div class="card-body">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); font-size: 12px;">
-                            <div>
-                                <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 4px;">Blink Rate</div>
-                                <div style="color: var(--text-primary); font-weight: 500;" id="blinkRate">0/min</div>
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-label">Blink Rate</div>
+                                <div class="metric-value" id="blinkRate">0/min</div>
                             </div>
-                            <div>
-                                <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 4px;">Eye Aspect Ratio</div>
-                                <div style="color: var(--text-primary); font-weight: 500;" id="eyeAspectRatio">0.00</div>
+                            <div class="metric-item">
+                                <div class="metric-label">Eye Aspect Ratio</div>
+                                <div class="metric-value" id="eyeAspectRatio">0.00</div>
                             </div>
-                            <div>
-                                <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 4px;">Eyebrow Raise</div>
-                                <div style="color: var(--text-primary); font-weight: 500;" id="eyebrowRaise">0%</div>
+                            <div class="metric-item">
+                                <div class="metric-label">Eyebrow Raise</div>
+                                <div class="metric-value" id="eyebrowRaise">0%</div>
                             </div>
-                            <div>
-                                <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 4px;">Lip Tension</div>
-                                <div style="color: var(--text-primary); font-weight: 500;" id="lipTension">0%</div>
+                            <div class="metric-item">
+                                <div class="metric-label">Lip Tension</div>
+                                <div class="metric-value" id="lipTension">0%</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Stress Level</div>
+                                <div class="metric-value" id="stressLevel">0%</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Confusion Level</div>
+                                <div class="metric-value" id="confusionLevel">0%</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Sleepiness</div>
+                                <div class="metric-value" id="sleepinessScore">0%</div>
                             </div>
                         </div>
                     </div>
@@ -664,33 +1072,156 @@
         </div>
     </div>
 
-    <!-- Eye Focus Point Visualization -->
-    <div id="focusPoint" style="display: none; position: fixed; width: 20px; height: 20px; background: rgba(59, 130, 246, 0.6); border: 2px solid #3b82f6; border-radius: 50%; pointer-events: none; z-index: 9999; transform: translate(-50%, -50%); box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);"></div>
+    <div id="focusBar" class="focus-bar">
+        <div id="focusBarHeader" class="focus-bar-header">
+            <div class="focus-bar-title">
+                <span class="status-dot" id="vlmStatusDot"></span>
+                <span>Focus Bar</span>
+            </div>
+            <div class="focus-bar-actions">
+                <button id="focusBarMinBtn" class="icon-btn" type="button">–</button>
+            </div>
+        </div>
+        <div class="focus-bar-body">
+            <div class="focus-row">
+                <div class="focus-value" id="focusBarPct">0%</div>
+                <div class="focus-status-pill distracted" id="focusBarStatus">distracted</div>
+            </div>
+            <div class="focus-bar-meter">
+                <div class="focus-bar-fill" id="focusBarFill"></div>
+            </div>
+            <div class="vlm-row">
+                <label class="toggle">
+                    <input id="vlmToggle" type="checkbox" />
+                    <span>Try VLM</span>
+                </label>
+                <div class="vlm-status">
+                    <span id="vlmStatusText">off</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         const socket = io();
         let sessionRunning = false;
         let processingPaused = false;
+        let latestState = null;
+        let faceMeshOverlayEnabled = false;
+        let focusBar = null;
+        let focusBarDrag = null;
 
         // Throttle focus point updates to reduce lag (update every 100ms max)
         let lastFocusPointUpdate = 0;
         const FOCUS_POINT_THROTTLE = 100; // ms
+
+        async function refreshEnvironmentIndicator() {
+            try {
+                const res = await fetch('/api/environment');
+                if (!res.ok) return;
+                const env = await res.json();
+
+                const py = (env.python_executable || '').split(/[\\\\/]/).slice(-2).join('/');
+                const gpuFlag = env.gpu_enabled ? 'GPU: ON' : 'GPU: OFF';
+                const torchCuda = env.torch_cuda_available ? `torch CUDA: ON (${env.torch_cuda_device_count || 0})` : 'torch CUDA: OFF';
+                const vlmFlag = env.vlm_ready ? 'VLM: ON' : 'VLM: OFF';
+
+                const el = document.getElementById('envIndicator');
+                if (el) el.textContent = `${gpuFlag} | ${torchCuda} | ${vlmFlag} | py: ${py}`;
+            } catch (e) {}
+        }
+
+        async function refreshOverlayIndicator() {
+            try {
+                const res = await fetch('/api/ui/overlay');
+                if (!res.ok) return;
+                const data = await res.json();
+                const overlay = data && data.overlay ? data.overlay : {};
+                faceMeshOverlayEnabled = !!overlay.show_face_mesh;
+                const btn = document.getElementById('overlayBtn');
+                if (btn) btn.textContent = faceMeshOverlayEnabled ? 'Overlay: On' : 'Overlay: Off';
+            } catch (e) {}
+        }
+
+        async function toggleFaceMeshOverlay() {
+            const btn = document.getElementById('overlayBtn');
+            if (btn) btn.disabled = true;
+            try {
+                const res = await fetch('/api/ui/overlay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ toggle: true })
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                const overlay = data && data.overlay ? data.overlay : {};
+                faceMeshOverlayEnabled = !!overlay.show_face_mesh;
+            } catch (e) {} finally {
+                if (btn) btn.disabled = false;
+                refreshOverlayIndicator();
+            }
+        }
 
         // Connect to server
         socket.on('connect', () => {
             console.log('Connected to server');
         });
 
-        // Receive frame updates
+        socket.on('state_update', (payload) => {
+            const state = payload && payload.state ? payload.state : payload;
+            if (state) {
+                latestState = state;
+                updateUI(state);
+            }
+        });
+
         socket.on('frame_update', (data) => {
-            const frame = data.frame;
-            const state = data.state;
+            const frame = data && data.frame ? data.frame : null;
+            if (frame) {
+                document.getElementById('webcam-feed').src = 'data:image/jpeg;base64,' + frame;
+            }
+        });
 
-            // Update webcam feed
-            document.getElementById('webcam-feed').src = 'data:image/jpeg;base64,' + frame;
+        socket.on('vlm_status_update', (status) => {
+            if (!latestState) latestState = {};
+            if (!latestState.vlm) latestState.vlm = {};
+            if (status && typeof status === 'object') {
+                latestState.vlm.status = status.status;
+                latestState.vlm.ready = !!status.ready;
+                latestState.vlm.last_error = status.last_error || null;
+            }
+            updateFocusBarFromState(latestState);
+        });
 
-            // Update stats
-            updateUI(state);
+        refreshEnvironmentIndicator();
+        setInterval(refreshEnvironmentIndicator, 10000);
+        refreshOverlayIndicator();
+        initFocusBar();
+        let lastQualityPreset = null;
+
+        async function setQualityPreset(preset) {
+            try {
+                const res = await fetch('/api/quality', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ preset })
+                });
+                if (!res.ok) return;
+                lastQualityPreset = preset;
+            } catch (e) {}
+        }
+
+        socket.on('calibration_saved', (payload) => {
+            console.log('Calibration saved:', payload);
+        });
+
+        socket.on('calibration_error', (payload) => {
+            console.error('Calibration error:', payload);
+            if (payload && payload.error) {
+                alert('Calibration failed: ' + payload.error);
+            } else {
+                alert('Calibration failed');
+            }
         });
 
         // Update UI with state
@@ -698,9 +1229,18 @@
             // Stats
             document.getElementById('focusPercentage').textContent = Math.round(state.focus_percentage) + '%';
             document.getElementById('focusedTime').textContent = state.time_tracking.focused_time_formatted;
+            document.getElementById('unfocusedTime').textContent = state.time_tracking.unfocused_time_formatted;
+            document.getElementById('mentalEffort').textContent = Math.round(state.mental_effort || 0) + '%';
             document.getElementById('fpsValue').textContent = state.webcam.fps.toFixed(1);
             document.getElementById('faceCount').textContent = state.webcam.face_count;
             document.getElementById('frameCount').textContent = state.webcam.frame_count;
+
+            const qp = (state.webcam && state.webcam.quality_preset) ? state.webcam.quality_preset : null;
+            if (qp && qp !== lastQualityPreset) {
+                const sel = document.getElementById('qualityPreset');
+                if (sel) sel.value = qp;
+                lastQualityPreset = qp;
+            }
 
             // Focus meter
             document.getElementById('focusMeterValue').textContent = Math.round(state.focus_percentage) + '%';
@@ -720,6 +1260,20 @@
                 focusStatus.className = 'badge badge-danger';
                 document.getElementById('focusMeterFill').style.background = 'var(--danger)';
             }
+
+            const floating = document.getElementById('focusFloating');
+            const pill = document.getElementById('focusFloatingPill');
+            const val = document.getElementById('focusFloatingValue');
+            if (floating && pill && val) {
+                floating.style.display = 'none';
+                val.textContent = Math.round(state.focus_percentage) + '%';
+                const st = (state.focus_status || 'distracted').toLowerCase();
+                pill.className = 'focus-pill ' + (st === 'focused' ? 'focused' : (st === 'unfocused' ? 'unfocused' : 'distracted'));
+                const label = document.getElementById('focusFloatingLabel');
+                if (label) label.textContent = st;
+            }
+
+            updateFocusBarFromState(state);
 
             // Emotion
             const emotionIcons = {
@@ -761,28 +1315,41 @@
             }
 
             // Gaze tracking
-            document.getElementById('lookingAt').textContent = state.facial_metrics.looking_at || 'Center';
-            document.getElementById('attentionScore').textContent = Math.round(state.facial_metrics.attention_score || 100) + '%';
-            document.getElementById('gazeX').textContent = (state.facial_metrics.eye_gaze_x || 0).toFixed(2);
-            document.getElementById('gazeY').textContent = (state.facial_metrics.eye_gaze_y || 0).toFixed(2);
+            document.getElementById('lookingAt').textContent = state.eye_tracking.looking_at || 'Center';
+            document.getElementById('attentionScore').textContent = Math.round(state.eye_tracking.attention_score || 100) + '%';
+            document.getElementById('gazeX').textContent = ((state.facial_metrics.micro_expressions && state.facial_metrics.micro_expressions.eye_gaze_x) || 0).toFixed(2);
+            document.getElementById('gazeY').textContent = ((state.facial_metrics.micro_expressions && state.facial_metrics.micro_expressions.eye_gaze_y) || 0).toFixed(2);
 
             // Head pose
-            document.getElementById('headYaw').textContent = Math.round(state.facial_metrics.head_yaw || 0) + '°';
-            document.getElementById('headPitch').textContent = Math.round(state.facial_metrics.head_pitch || 0) + '°';
-            document.getElementById('headRoll').textContent = Math.round(state.facial_metrics.head_roll || 0) + '°';
-            document.getElementById('postureScore').textContent = Math.round(state.facial_metrics.posture_score || 0) + '%';
+            document.getElementById('headYaw').textContent = Math.round(state.head_pose.yaw || 0) + '°';
+            document.getElementById('headPitch').textContent = Math.round(state.head_pose.pitch || 0) + '°';
+            document.getElementById('headRoll').textContent = Math.round(state.head_pose.roll || 0) + '°';
+            document.getElementById('postureScore').textContent = Math.round(state.body_pose.posture_score || 0) + '%';
 
             // Micro-expressions
-            document.getElementById('blinkRate').textContent = (state.facial_metrics.blink_rate || 0) + '/min';
+            document.getElementById('blinkRate').textContent = (((state.facial_metrics.micro_expressions && state.facial_metrics.micro_expressions.blink_rate) || 0)) + '/min';
             document.getElementById('eyeAspectRatio').textContent = (state.facial_metrics.eye_aspect_ratio || 0).toFixed(2);
-            document.getElementById('eyebrowRaise').textContent = Math.round((state.facial_metrics.eyebrow_raise || 0) * 100) + '%';
-            document.getElementById('lipTension').textContent = Math.round((state.facial_metrics.lip_tension || 0) * 100) + '%';
+            document.getElementById('eyebrowRaise').textContent = Math.round(((state.facial_metrics.micro_expressions && state.facial_metrics.micro_expressions.eyebrow_raise) || 0) * 100) + '%';
+            document.getElementById('lipTension').textContent = Math.round(((state.facial_metrics.micro_expressions && state.facial_metrics.micro_expressions.lip_tension) || 0) * 100) + '%';
+            document.getElementById('stressLevel').textContent = Math.round(((state.facial_metrics.micro_expressions && state.facial_metrics.micro_expressions.stress_level) || 0) * 100) + '%';
+            document.getElementById('confusionLevel').textContent = Math.round(((state.facial_metrics.micro_expressions && state.facial_metrics.micro_expressions.confusion_level) || 0) * 100) + '%';
+            const sleepyEl = document.getElementById('sleepinessScore');
+            if (sleepyEl) {
+                sleepyEl.textContent = Math.round(((state.facial_metrics.micro_expressions && state.facial_metrics.micro_expressions.sleepiness_score) || 0)) + '%';
+            }
+
+            const rm = state.rule_metrics || {};
+            const drowsyRisk = Math.round(((rm.drowsiness_risk || 0) * 100));
+            const headAway = (rm.head_away || 0) >= 1 ? 'YES' : 'NO';
+            const stressRule = Math.round(((rm.stress_level_rule || 0) * 100));
+            const confusionRule = Math.round(((rm.confusion_level_rule || 0) * 100));
+            const ruleEl = document.getElementById('ruleMetricsText');
+            if (ruleEl) {
+                ruleEl.textContent = `Drowsiness risk: ${drowsyRisk}%\nHead away: ${headAway}\nStress(rule): ${stressRule}%\nConfusion(rule): ${confusionRule}%`;
+            }
 
             // Interpretation & Suggestions
             updateInterpretationAndSuggestions(state);
-
-            // Eye focus point on screen
-            updateFocusPoint(state);
 
             // Distractions
             const distractionsList = document.getElementById('distractionsList');
@@ -795,6 +1362,207 @@
             }
         }
 
+        function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+
+        function getSavedFocusBarState() {
+            try {
+                const raw = localStorage.getItem('eaglearn_focus_bar');
+                if (!raw) return null;
+                return JSON.parse(raw);
+            } catch (e) { return null; }
+        }
+
+        function saveFocusBarState(state) {
+            try { localStorage.setItem('eaglearn_focus_bar', JSON.stringify(state)); } catch (e) {}
+        }
+
+        function setFocusBarPosition(x, y) {
+            if (!focusBar) return;
+            const rect = focusBar.getBoundingClientRect();
+            const maxX = Math.max(0, window.innerWidth - rect.width - 8);
+            const maxY = Math.max(0, window.innerHeight - rect.height - 8);
+            const nx = clamp(x, 8, maxX);
+            const ny = clamp(y, 8, maxY);
+            focusBar.style.left = nx + 'px';
+            focusBar.style.top = ny + 'px';
+            saveFocusBarState({ ...(getSavedFocusBarState() || {}), x: nx, y: ny });
+        }
+
+        async function setVlmEnabled(enabled) {
+            try {
+                const res = await fetch('/api/vlm/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled: !!enabled })
+                });
+                if (!res.ok) return null;
+                return await res.json();
+            } catch (e) { return null; }
+        }
+
+        function updateFocusBarFromState(state) {
+            if (!focusBar || !state) return;
+            const pct = Math.round(state.focus_percentage || 0);
+            const status = (state.focus_status || 'distracted').toLowerCase();
+
+            const pctEl = document.getElementById('focusBarPct');
+            const stEl = document.getElementById('focusBarStatus');
+            const fillEl = document.getElementById('focusBarFill');
+            if (pctEl) pctEl.textContent = pct + '%';
+            if (stEl) {
+                stEl.textContent = status;
+                stEl.className = 'focus-status-pill ' + (status === 'focused' ? 'focused' : (status === 'unfocused' ? 'unfocused' : 'distracted'));
+            }
+            if (fillEl) {
+                fillEl.style.width = pct + '%';
+                if (status === 'focused') fillEl.style.background = 'var(--success)';
+                else if (status === 'distracted') fillEl.style.background = 'var(--warning)';
+                else fillEl.style.background = 'var(--danger)';
+            }
+
+            const vlm = state.vlm || {};
+            const vlmToggle = document.getElementById('vlmToggle');
+            if (vlmToggle && typeof vlm.user_enabled === 'boolean') {
+                vlmToggle.checked = !!vlm.user_enabled;
+            }
+
+            const dot = document.getElementById('vlmStatusDot');
+            const txt = document.getElementById('vlmStatusText');
+            const st = String(vlm.status || 'disabled').toLowerCase();
+            const ready = !!vlm.ready;
+            const err = vlm.last_error ? String(vlm.last_error) : '';
+            if (dot) {
+                let cls = 'status-dot off';
+                if (st === 'ready' && ready) cls = 'status-dot on';
+                else if (st === 'loading' || st === 'loaded') cls = 'status-dot warn';
+                else if (st === 'error') cls = 'status-dot err';
+                dot.className = cls;
+            }
+            if (txt) {
+                let label = st;
+                if (st === 'ready' && ready) label = 'ready';
+                if (st === 'disabled') label = 'off';
+                if (st === 'unavailable') label = 'unavailable';
+                txt.textContent = err ? `${label} • ${err}` : label;
+            }
+        }
+
+        function initFocusBar() {
+            focusBar = document.getElementById('focusBar');
+            if (!focusBar) return;
+
+            const saved = getSavedFocusBarState();
+            if (saved && typeof saved.x === 'number' && typeof saved.y === 'number') {
+                setFocusBarPosition(saved.x, saved.y);
+            } else {
+                setFocusBarPosition(24, 120);
+            }
+
+            if (saved && saved.minimized) {
+                focusBar.classList.add('is-minimized');
+            }
+
+            const minimizeBtn = document.getElementById('focusBarMinBtn');
+            if (minimizeBtn) {
+                minimizeBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const minimized = focusBar.classList.toggle('is-minimized');
+                    saveFocusBarState({ ...(getSavedFocusBarState() || {}), minimized });
+                });
+            }
+
+            const vlmToggle = document.getElementById('vlmToggle');
+            if (vlmToggle) {
+                vlmToggle.addEventListener('change', async () => {
+                    vlmToggle.disabled = true;
+                    const out = await setVlmEnabled(vlmToggle.checked);
+                    vlmToggle.disabled = false;
+                    if (out && out.vlm) {
+                        if (!latestState) latestState = {};
+                        latestState.vlm = { ...(latestState.vlm || {}), ...out.vlm };
+                        updateFocusBarFromState(latestState);
+                    }
+                });
+            }
+
+            const header = document.getElementById('focusBarHeader');
+            if (!header) return;
+
+            focusBarDrag = {
+                active: false,
+                pointerId: null,
+                startX: 0,
+                startY: 0,
+                originX: 0,
+                originY: 0,
+                raf: null,
+                nextX: 0,
+                nextY: 0,
+            };
+
+            const apply = () => {
+                focusBarDrag.raf = null;
+                setFocusBarPosition(focusBarDrag.nextX, focusBarDrag.nextY);
+            };
+
+            header.addEventListener('pointerdown', (e) => {
+                if (e.button !== undefined && e.button !== 0) return;
+                focusBarDrag.active = true;
+                focusBarDrag.pointerId = e.pointerId;
+                header.setPointerCapture(e.pointerId);
+                const rect = focusBar.getBoundingClientRect();
+                focusBarDrag.originX = rect.left;
+                focusBarDrag.originY = rect.top;
+                focusBarDrag.startX = e.clientX;
+                focusBarDrag.startY = e.clientY;
+                focusBarDrag.nextX = rect.left;
+                focusBarDrag.nextY = rect.top;
+                focusBar.classList.add('is-dragging');
+            });
+
+            header.addEventListener('pointermove', (e) => {
+                if (!focusBarDrag.active || e.pointerId !== focusBarDrag.pointerId) return;
+                const dx = e.clientX - focusBarDrag.startX;
+                const dy = e.clientY - focusBarDrag.startY;
+                focusBarDrag.nextX = focusBarDrag.originX + dx;
+                focusBarDrag.nextY = focusBarDrag.originY + dy;
+                if (!focusBarDrag.raf) focusBarDrag.raf = requestAnimationFrame(apply);
+            });
+
+            const end = (e) => {
+                if (!focusBarDrag.active) return;
+                if (e.pointerId !== undefined && e.pointerId !== focusBarDrag.pointerId) return;
+                focusBarDrag.active = false;
+                focusBar.classList.remove('is-dragging');
+                focusBarDrag.pointerId = null;
+                if (focusBarDrag.raf) {
+                    cancelAnimationFrame(focusBarDrag.raf);
+                    focusBarDrag.raf = null;
+                }
+                setFocusBarPosition(focusBarDrag.nextX, focusBarDrag.nextY);
+            };
+
+            header.addEventListener('pointerup', end);
+            header.addEventListener('pointercancel', end);
+            window.addEventListener('resize', () => {
+                const rect = focusBar.getBoundingClientRect();
+                setFocusBarPosition(rect.left, rect.top);
+            });
+
+            (async () => {
+                try {
+                    const res = await fetch('/api/vlm/settings');
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    const vlm = data && data.vlm ? data.vlm : null;
+                    if (!vlm) return;
+                    if (!latestState) latestState = {};
+                    latestState.vlm = { ...(latestState.vlm || {}), ...vlm };
+                    updateFocusBarFromState(latestState);
+                } catch (e) {}
+            })();
+        }
+
         // Start session
         async function startSession() {
             const btn = document.getElementById('startBtn');
@@ -803,6 +1571,27 @@
 
             try {
                 if (!sessionRunning) {
+                    // AUTO-CALIBRATION PROMPT - Check if user has calibrated before
+                    const hasCalibrated = localStorage.getItem('eaglearn_calibrated');
+                    if (!hasCalibrated) {
+                        const shouldCalibrate = confirm(
+                            '🎯 GAZE CALIBRATION RECOMMENDED\n\n' +
+                            'For better accuracy, we recommend calibrating your gaze tracking before starting.\n\n' +
+                            'This takes ~45 seconds and improves gaze tracking accuracy by 15-20%.\n\n' +
+                            'Would you like to calibrate now?\n\n' +
+                            '(You can also calibrate later using the "Calibrate Gaze" button)'
+                        );
+
+                        if (shouldCalibrate) {
+                            // Start calibration first
+                            startCalibration();
+                            return; // Don't start session yet, user needs to complete calibration
+                        } else {
+                            // Mark as declined to prevent asking again this session
+                            sessionStorage.setItem('calibration_declined', 'true');
+                        }
+                    }
+
                     const response = await fetch('/api/session/start', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' }
@@ -857,6 +1646,38 @@
             }
         }
 
+        async function downloadLog() {
+            try {
+                const response = await fetch('/api/logs/metrics/download', { method: 'GET' });
+                if (!response.ok) {
+                    let message = 'Gagal mengunduh log';
+                    try {
+                        const data = await response.json();
+                        if (data && data.message) message = data.message;
+                    } catch (e) {}
+                    alert(message);
+                    return;
+                }
+
+                const blob = await response.blob();
+                const cd = response.headers.get('content-disposition') || '';
+                const match = /filename=\"?([^\";]+)\"?/i.exec(cd);
+                const filename = match ? match[1] : 'metrics_log.jsonl';
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Gagal mengunduh log');
+            }
+        }
+
         // Update interpretation and suggestions based on state
         function updateInterpretationAndSuggestions(state) {
             const interpretationEl = document.getElementById('interpretationText');
@@ -893,14 +1714,14 @@
             }
 
             // Head pose interpretation
-            const headTilt = Math.abs(state.facial_metrics.head_roll || 0);
+            const headTilt = Math.abs(state.head_pose.roll || 0);
             if (headTilt > 15) {
                 interpretation.push('📐 Head tilting detected - possible fatigue or confusion');
                 suggestions.push('• Check your posture - sit upright for better focus');
             }
 
             // Blink rate interpretation
-            const blinkRate = state.facial_metrics.blink_rate || 0;
+            const blinkRate = (state.facial_metrics.micro_expressions && state.facial_metrics.micro_expressions.blink_rate) || 0;
             if (blinkRate < 10) {
                 interpretation.push('👁️ Low blink rate - intense concentration (possible screen fixation)');
                 suggestions.push('• Remember to blink regularly to reduce eye strain');
@@ -917,7 +1738,7 @@
             }
 
             // Gaze tracking interpretation
-            const attentionScore = state.facial_metrics.attention_score || 100;
+            const attentionScore = state.eye_tracking.attention_score || 100;
             if (attentionScore < 70) {
                 interpretation.push('👀 Gaze not centered - attention wandering');
                 suggestions.push('• Redirect your attention to the center of the screen');
@@ -928,241 +1749,327 @@
             suggestionsEl.textContent = suggestions.join('\n') || '✅ Everything looks good - keep going!';
         }
 
-        // Update eye focus point on screen (throttled to reduce lag)
-        function updateFocusPoint(state) {
-            const now = Date.now();
+        function updateFocusPoint(state) { return; }
 
-            // Skip update if too soon (throttling)
-            if (now - lastFocusPointUpdate < FOCUS_POINT_THROTTLE) {
-                return;
-            }
-            lastFocusPointUpdate = now;
-
-            const focusPoint = document.getElementById('focusPoint');
-            const gazeX = state.facial_metrics.eye_gaze_x || 0;
-            const gazeY = state.facial_metrics.eye_gaze_y || 0;
-
-            // Only show focus point if monitoring is running
-            if (sessionRunning && state.face_detected) {
-                focusPoint.style.display = 'block';
-
-                // Map gaze coordinates (-1 to 1) to screen coordinates
-                // gazeX: -1 (left) to 1 (right)
-                // gazeY: -1 (up) to 1 (down)
-                const screenX = ((gazeX + 1) / 2) * window.innerWidth;
-                const screenY = ((gazeY + 1) / 2) * window.innerHeight;
-
-                focusPoint.style.left = screenX + 'px';
-                focusPoint.style.top = screenY + 'px';
-
-                // Change color based on attention
-                const attention = state.facial_metrics.attention_score || 100;
-                if (attention >= 80) {
-                    focusPoint.style.background = 'rgba(16, 185, 129, 0.6)';
-                    focusPoint.style.borderColor = '#10b981';
-                } else if (attention >= 60) {
-                    focusPoint.style.background = 'rgba(245, 158, 11, 0.6)';
-                    focusPoint.style.borderColor = '#f59e0b';
-                } else {
-                    focusPoint.style.background = 'rgba(239, 68, 68, 0.6)';
-                    focusPoint.style.borderColor = '#ef4444';
-                }
-            } else {
-                focusPoint.style.display = 'none';
-            }
-        }
-
-        // ENHANCED: Start calibration - 9-point calibration wizard with visual feedback
+        // ENHANCED: Start calibration - moving target calibration wizard
         let calibrationState = {
             active: false,
-            currentPoint: 0,
-            points: [
-                { x: 10, y: 10, name: 'Top Left' },
-                { x: 50, y: 10, name: 'Top Center' },
-                { x: 90, y: 10, name: 'Top Right' },
-                { x: 10, y: 50, name: 'Middle Left' },
-                { x: 50, y: 50, name: 'Center' },
-                { x: 90, y: 50, name: 'Middle Right' },
-                { x: 10, y: 90, name: 'Bottom Left' },
-                { x: 50, y: 90, name: 'Bottom Center' },
-                { x: 90, y: 90, name: 'Bottom Right' }
-            ],
-            gazeData: [],
-            qualityScores: [], // Track quality for each point
+            phase: 'gaze',
             startTime: null,
-            pointStartTime: null
+            gazeDurationMs: 45000,
+            headDurationMs: 19000,
+            headPhaseStartTime: null,
+            headStep: 'center',
+            moveInterval: null,
+            gazeData: [],
+            headSamples: [],
+            qualityScores: [],
+            lastSampleTime: 0,
+            sampleInterval: 100,
+            currentTargetPoint: { x: 50, y: 50 }
         };
+
+        // Generate smooth path using Lissajous curve for good coverage
+        function generateCalibrationPath() {
+            const points = [];
+            const steps = 200; // Number of positions
+            for (let i = 0; i < steps; i++) {
+                const t = (i / steps) * 2 * Math.PI;
+                const x = 50 + 40 * Math.sin(3 * t);
+                const y = 50 + 40 * Math.sin(2 * t);
+                points.push({ x, y });
+            }
+            return points;
+        }
+
+        let calibrationPath = generateCalibrationPath();
+        let pathIndex = 0;
+
+        function isCameraReady() {
+            const img = document.getElementById('webcam-feed');
+            const hasImage = !!(img && img.src && img.src.startsWith('data:image/'));
+            const fps = latestState && latestState.webcam ? (latestState.webcam.fps || 0) : 0;
+            const fc = latestState && latestState.webcam ? (latestState.webcam.frame_count || 0) : 0;
+            return hasImage && fps > 0.1 && fc > 5;
+        }
+
+        async function waitForCameraReady(timeoutMs = 7000) {
+            const start = Date.now();
+            while (Date.now() - start < timeoutMs) {
+                if (isCameraReady()) return true;
+                await new Promise(r => setTimeout(r, 200));
+            }
+            return false;
+        }
 
         function startCalibration() {
             if (calibrationState.active) {
                 // Cancel calibration
                 calibrationState.active = false;
+                calibrationState.phase = 'gaze';
+                if (calibrationState.moveInterval) {
+                    clearInterval(calibrationState.moveInterval);
+                    calibrationState.moveInterval = null;
+                }
                 document.getElementById('calibrationOverlay').style.display = 'none';
                 document.getElementById('calibrateBtn').textContent = '🎯 Calibrate Gaze';
                 socket.emit('calibration_cancel');
                 return;
             }
 
+            if (!sessionRunning) {
+                startSession();
+            }
+
             // Start calibration
             calibrationState.active = true;
-            calibrationState.currentPoint = 0;
-            calibrationState.gazeData = [];
-            calibrationState.qualityScores = [];
+            calibrationState.phase = 'gaze';
             calibrationState.startTime = Date.now();
+            calibrationState.gazeData = [];
+            calibrationState.headSamples = [];
+            calibrationState.qualityScores = [];
+            calibrationState.lastSampleTime = 0;
+            pathIndex = 0;
+            calibrationState.currentTargetPoint = { x: 50, y: 50 };
 
-            // Show calibration overlay
+            // Show overlay
             const overlay = document.getElementById('calibrationOverlay');
             overlay.style.display = 'flex';
             document.getElementById('calibrateBtn').textContent = '❌ Cancel Calibration';
 
-            // Reset progress display
-            updateCalibrationProgress(0, 0);
+            // Bind cancel button
+            const cancelBtn = document.getElementById('calibrationCancelBtn');
+            cancelBtn.onclick = startCalibration; // Reuse to cancel
 
-            // Start first point
-            showCalibrationPoint(0);
-
-            // Notify backend
-            socket.emit('calibration_start');
-        }
-
-        function showCalibrationPoint(index) {
-            if (index >= calibrationState.points.length) {
-                // All points done
-                finishCalibration();
-                return;
-            }
-
-            const point = calibrationState.points[index];
-            const target = document.getElementById('calibrationTarget');
             const info = document.getElementById('calibrationInfo');
+            if (info) {
+                info.innerHTML = `Menyiapkan kamera...<br><span style="font-size: 20px;">tunggu sebentar</span>`;
+            }
+            const titleEl = document.getElementById('calibrationTitle');
+            const descEl = document.getElementById('calibrationDesc');
+            if (titleEl) titleEl.textContent = '🎯 Kalibrasi Gaze';
+            if (descEl) descEl.textContent = 'Ikuti titik biru dengan mata. Jaga kepala tetap stabil.';
 
-            // Position target
-            target.style.left = point.x + '%';
-            target.style.top = point.y + '%';
+            // Start moving target
+            const moveTarget = () => {
+                if (!calibrationState.active || calibrationState.phase !== 'gaze') return;
 
-            // Update info with countdown
-            info.innerHTML = `Look at the <strong>${point.name}</strong> point (${index + 1}/9)<br><span id="countdown" style="font-size: 36px; color: #3b82f6;">3</span>`;
+                const point = calibrationPath[pathIndex];
+                const target = document.getElementById('calibrationTarget');
 
-            // Collect data for this point
-            calibrationState.currentPoint = index;
-            calibrationState.pointStartTime = Date.now();
-            calibrationState.gazeData.push({
-                point: point,
-                samples: []
-            });
+                // Position target
+                target.style.left = point.x + '%';
+                target.style.top = point.y + '%';
+                calibrationState.currentTargetPoint = { x: point.x, y: point.y };
 
-            // Countdown timer
-            let countdown = 3;
-            const countdownEl = document.getElementById('countdown');
-            const countdownInterval = setInterval(() => {
-                countdown--;
-                if (countdownEl) countdownEl.textContent = countdown;
+                // Update info with progress
+                const elapsed = Date.now() - calibrationState.startTime;
+                const remaining = Math.max(0, calibrationState.gazeDurationMs - elapsed);
+                const progress = Math.min(100, (elapsed / calibrationState.gazeDurationMs) * 100);
+                
+                info.innerHTML = `Follow the dot<br><span style="font-size: 20px;">${Math.ceil(remaining / 1000)}s</span>`;
+                
+                // Update progress bar
+                const progressEl = document.getElementById('calibrationProgress');
+                if (progressEl) {
+                    progressEl.style.width = progress + '%';
+                    progressEl.textContent = `${Math.round(progress)}%`;
+                }
 
-                if (countdown <= 0) {
-                    clearInterval(countdownInterval);
-                    // Move to next point
-                    if (calibrationState.active && index < calibrationState.points.length - 1) {
-                        setTimeout(() => showCalibrationPoint(index + 1), 200);
-                    } else if (index === calibrationState.points.length - 1) {
-                        finishCalibration();
+                pathIndex = (pathIndex + 1) % calibrationPath.length;
+
+                // Check if done
+                if (elapsed >= calibrationState.gazeDurationMs) {
+                    startHeadCalibrationPhase();
+                }
+            };
+
+            (async () => {
+                const ready = await waitForCameraReady(7000);
+                if (!calibrationState.active) return;
+                if (!ready) {
+                    if (info) info.innerHTML = `Kamera belum siap<br><span style="font-size: 20px;">coba lagi</span>`;
+                    calibrationState.active = false;
+                    calibrationState.phase = 'gaze';
+                    if (calibrationState.moveInterval) {
+                        clearInterval(calibrationState.moveInterval);
+                        calibrationState.moveInterval = null;
                     }
+                    document.getElementById('calibrationOverlay').style.display = 'none';
+                    document.getElementById('calibrateBtn').textContent = '🎯 Calibrate Gaze';
+                    return;
                 }
-            }, 1000);
+
+                socket.emit('calibration_start');
+                moveTarget();
+                calibrationState.moveInterval = setInterval(moveTarget, 200);
+            })();
         }
 
-        function updateCalibrationProgress(currentPoint, sampleCount) {
-            const progressEl = document.getElementById('calibrationProgress');
-            const samplesEl = document.getElementById('sampleCount');
-            const qualityEl = document.getElementById('qualityIndicator');
-
-            if (progressEl) {
-                const progress = ((currentPoint + 1) / 9) * 100;
-                progressEl.style.width = progress + '%';
-                progressEl.textContent = `${currentPoint + 1}/9`;
+        function startHeadCalibrationPhase() {
+            if (!calibrationState.active) return;
+            if (calibrationState.moveInterval) {
+                clearInterval(calibrationState.moveInterval);
+                calibrationState.moveInterval = null;
             }
 
-            if (samplesEl) {
-                samplesEl.textContent = `Samples: ${sampleCount}`;
-            }
+            calibrationState.phase = 'head';
+            calibrationState.headPhaseStartTime = Date.now();
+            calibrationState.headStep = 'center';
+            calibrationState.lastSampleTime = 0;
 
-            // Update quality indicator based on sample count and stability
-            if (qualityEl && sampleCount > 0) {
-                const quality = Math.min(100, (sampleCount / 30) * 100);
-                if (quality >= 80) {
-                    qualityEl.innerHTML = '✅ Excellent';
-                    qualityEl.style.color = '#22c55e';
-                } else if (quality >= 50) {
-                    qualityEl.innerHTML = '⚠️ Good';
-                    qualityEl.style.color = '#eab308';
-                } else {
-                    qualityEl.innerHTML = '❌ Poor';
-                    qualityEl.style.color = '#ef4444';
+            const target = document.getElementById('calibrationTarget');
+            target.style.left = '50%';
+            target.style.top = '50%';
+            calibrationState.currentTargetPoint = { x: 50, y: 50 };
+
+            const titleEl = document.getElementById('calibrationTitle');
+            const descEl = document.getElementById('calibrationDesc');
+            const info = document.getElementById('calibrationInfo');
+            if (titleEl) titleEl.textContent = '🧭 Kalibrasi Gerak Kepala';
+            if (descEl) descEl.textContent = 'Tahan pandangan di titik tengah, lalu gerakkan kepala pelan.';
+            if (info) info.innerHTML = `Tatap titik tengah<br><span style="font-size: 20px;">siap...</span>`;
+
+            const tick = () => {
+                if (!calibrationState.active || calibrationState.phase !== 'head') return;
+                const elapsed = Date.now() - calibrationState.headPhaseStartTime;
+                const remaining = Math.max(0, calibrationState.headDurationMs - elapsed);
+                const progress = Math.min(100, (elapsed / calibrationState.headDurationMs) * 100);
+
+                const progressEl = document.getElementById('calibrationProgress');
+                if (progressEl) {
+                    progressEl.style.width = progress + '%';
+                    progressEl.textContent = `${Math.round(progress)}%`;
                 }
-            }
+
+                let step = 'pitch';
+                let instruction = 'Gerakkan kepala pelan ATAS-BAWAH, mata tetap di titik.';
+                if (elapsed < 3000) {
+                    step = 'center';
+                    instruction = 'Posisikan kepala NETRAL di tengah, mata tetap di titik.';
+                } else if (elapsed < 11000) {
+                    step = 'yaw';
+                    instruction = 'Gerakkan kepala pelan KIRI-KANAN, mata tetap di titik.';
+                }
+                calibrationState.headStep = step;
+
+                if (info) {
+                    info.innerHTML = `${instruction}<br><span style="font-size: 20px;">${Math.ceil(remaining / 1000)}s</span>`;
+                }
+
+                if (elapsed >= calibrationState.headDurationMs) {
+                    finalizeCalibration();
+                }
+            };
+
+            tick();
+            calibrationState.moveInterval = setInterval(tick, 200);
         }
 
-        function finishCalibration() {
-            // Calculate overall quality score
-            let totalSamples = 0;
-            let qualityPoints = 0;
+        function finalizeCalibration() {
+            if (calibrationState.moveInterval) {
+                clearInterval(calibrationState.moveInterval);
+                calibrationState.moveInterval = null;
+            }
 
-            calibrationState.gazeData.forEach(pointData => {
-                const samples = pointData.samples.length;
-                totalSamples += samples;
+            const start = calibrationState.startTime || Date.now();
+            calibrationState.active = false;
+            calibrationState.phase = 'gaze';
 
-                // Calculate stability (standard deviation)
-                if (samples > 10) {
-                    const xValues = pointData.samples.map(s => s.x);
-                    const yValues = pointData.samples.map(s => s.y);
-
-                    const xStd = Math.sqrt(xValues.map(x => Math.pow(x - xValues.reduce((a, b) => a + b) / xValues.length, 2)).reduce((a, b) => a + b) / xValues.length);
-                    const yStd = Math.sqrt(yValues.map(y => Math.pow(y - yValues.reduce((a, b) => a + b) / yValues.length, 2)).reduce((a, b) => a + b) / yValues.length);
-
-                    const stability = Math.max(0, 100 - (xStd + yStd) * 100);
-                    qualityPoints += stability;
-                }
-            });
-
-            const avgQuality = qualityPoints / 9;
-            const duration = ((Date.now() - calibrationState.startTime) / 1000).toFixed(1);
-
-            // Hide overlay
             document.getElementById('calibrationOverlay').style.display = 'none';
             document.getElementById('calibrateBtn').textContent = '🎯 Calibrate Gaze';
-            calibrationState.active = false;
 
-            // Send data to backend
-            socket.emit('calibration_complete', {
-                data: calibrationState.gazeData
+            const regionSamples = {};
+            calibrationState.gazeData.forEach(sample => {
+                const sx = sample.screen_x || 0;
+                const sy = sample.screen_y || 0;
+                const region = `${Math.round(sx / 200)},${Math.round(sy / 200)}`;
+                regionSamples[region] = (regionSamples[region] || 0) + 1;
             });
 
-            // Show detailed success message
-            const qualityText = avgQuality >= 80 ? 'Excellent' : avgQuality >= 60 ? 'Good' : 'Fair';
-            const qualityEmoji = avgQuality >= 80 ? '🌟' : avgQuality >= 60 ? '👍' : '✅';
+            const regionCounts = Object.values(regionSamples);
+            const avgSamplesPerRegion = regionCounts.length
+                ? regionCounts.reduce((a, b) => a + b, 0) / regionCounts.length
+                : 0;
+            const qualityScore = Math.min(100, (avgSamplesPerRegion / 10) * 100);
+
+            const duration = ((Date.now() - start) / 1000).toFixed(1);
+            const totalGazeSamples = calibrationState.gazeData.length;
+            const totalHeadSamples = calibrationState.headSamples.length;
+
+            socket.emit('calibration_complete', {
+                data: calibrationState.gazeData,
+                head_samples: calibrationState.headSamples,
+                viewport: {
+                    width: window.innerWidth,
+                    height: window.innerHeight
+                }
+            });
+
+            const qualityText = qualityScore >= 80 ? 'Excellent' : qualityScore >= 60 ? 'Good' : 'Fair';
+            const qualityEmoji = qualityScore >= 80 ? '🌟' : qualityScore >= 60 ? '👍' : '✅';
+
+            localStorage.setItem('eaglearn_calibrated', 'true');
+            localStorage.setItem('eaglearn_calibration_date', new Date().toISOString());
 
             alert(`${qualityEmoji} Calibration Complete!\n\n` +
                   `Duration: ${duration}s\n` +
-                  `Total Samples: ${totalSamples}\n` +
-                  `Quality Score: ${qualityText} (${avgQuality.toFixed(0)}%)\n\n` +
-                  `Your gaze tracking is now calibrated.\n` +
-                  `Expected accuracy improvement: ~10-15%`);
+                  `Gaze Samples: ${totalGazeSamples}\n` +
+                  `Head Samples: ${totalHeadSamples}\n` +
+                  `Quality Score: ${qualityText} (${qualityScore.toFixed(0)}%)\n\n` +
+                  `Kalibrasi gaze + kompensasi gerak kepala tersimpan.`);
         }
 
         // Collect gaze data during calibration from state updates
         socket.on('frame_update', function(data) {
-            if (calibrationState.active && calibrationState.gazeData.length > 0) {
-                const state = data.state;
-                if (state && state.eye_gaze_x !== undefined) {
-                    const currentData = calibrationState.gazeData[calibrationState.currentPoint];
-                    if (currentData && currentData.samples) {
-                        currentData.samples.push({
-                            x: state.eye_gaze_x,
-                            y: state.eye_gaze_y,
-                            timestamp: Date.now()
+            if (calibrationState.active && calibrationState.phase === 'gaze') {
+                const state = latestState;
+                const micro = state && state.facial_metrics && state.facial_metrics.micro_expressions;
+                if (micro && micro.eye_gaze_x !== undefined && micro.eye_gaze_y !== undefined) {
+                    const now = Date.now();
+                    // Sample at most every 100ms
+                    if (now - calibrationState.lastSampleTime >= calibrationState.sampleInterval) {
+                        calibrationState.lastSampleTime = now;
+
+                        const point = calibrationState.currentTargetPoint || { x: 50, y: 50 };
+                        const screen_x = Math.round((point.x / 100) * window.innerWidth);
+                        const screen_y = Math.round((point.y / 100) * window.innerHeight);
+
+                        calibrationState.gazeData.push({
+                            point: { x: point.x, y: point.y },
+                            screen_x: screen_x,
+                            screen_y: screen_y,
+                            samples: [{
+                                x: micro.eye_gaze_x,
+                                y: micro.eye_gaze_y,
+                                timestamp: now
+                            }]
                         });
 
-                        // Update progress display
-                        updateCalibrationProgress(calibrationState.currentPoint, currentData.samples.length);
+                        // Update sample count display
+                        const gazeSamplesEl = document.getElementById('gazeSampleCount');
+                        if (gazeSamplesEl) gazeSamplesEl.textContent = `Gaze: ${calibrationState.gazeData.length}`;
+                    }
+                }
+            }
+            if (calibrationState.active && calibrationState.phase === 'head') {
+                const state = latestState;
+                const micro = state && state.facial_metrics && state.facial_metrics.micro_expressions;
+                const head = state && state.head_pose;
+                if (micro && head && micro.eye_gaze_x !== undefined && micro.eye_gaze_y !== undefined) {
+                    const now = Date.now();
+                    if (now - calibrationState.lastSampleTime >= calibrationState.sampleInterval) {
+                        calibrationState.lastSampleTime = now;
+                        calibrationState.headSamples.push({
+                            timestamp: now,
+                            step: calibrationState.headStep,
+                            head_yaw: head.yaw,
+                            head_pitch: head.pitch,
+                            gaze_x: micro.eye_gaze_x,
+                            gaze_y: micro.eye_gaze_y
+                        });
+                        const headSamplesEl = document.getElementById('headSampleCount');
+                        if (headSamplesEl) headSamplesEl.textContent = `Head: ${calibrationState.headSamples.length}`;
                     }
                 }
             }
@@ -1180,7 +2087,7 @@
             <div id="calibrationProgress" style="height: 8px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); width: 0%; transition: width 0.3s ease;"></div>
         </div>
         <div style="position: absolute; top: 55px; color: #a3a3a3; font-size: 14px;">
-            <span id="sampleCount">Samples: 0</span> | <span id="qualityIndicator">Waiting...</span>
+            <span id="gazeSampleCount">Gaze: 0</span> | <span id="headSampleCount">Head: 0</span> | <span id="qualityIndicator">Waiting...</span>
         </div>
 
         <!-- Main Info -->
@@ -1193,9 +2100,10 @@
 
         <!-- Instructions -->
         <div style="color: #a3a3a3; font-size: 16px; margin-top: 60px; max-width: 600px; text-align: center;">
-            <p style="margin-bottom: 12px;">🎯 <strong>9-Point Calibration</strong></p>
-            <p>Follow the blue dot with your eyes. Keep your head still and look directly at each point.</p>
-            <p style="margin-top: 12px; font-size: 14px; color: #737373;">Each point takes 3 seconds • Click "Cancel Calibration" to stop</p>
+            <p style="margin-bottom: 12px;"><strong id="calibrationTitle">🎯 Kalibrasi</strong></p>
+            <p id="calibrationDesc">Ikuti instruksi di layar.</p>
+            <p style="margin-top: 12px; font-size: 14px; color: #737373;">Duration: ~65 seconds • Click "Cancel Calibration" to stop</p>
+            <button id="calibrationCancelBtn" style="margin-top: 20px; padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">Cancel Calibration</button>
         </div>
     </div>
 

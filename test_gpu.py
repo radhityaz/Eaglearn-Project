@@ -4,9 +4,12 @@ Tests if TensorFlow can detect and use NVIDIA GPU
 """
 
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress warnings
 
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # Suppress warnings
+
+import time
 import tensorflow as tf
+
 print("=" * 60)
 print("TensorFlow GPU Detection Test")
 print("=" * 60)
@@ -15,8 +18,8 @@ print("=" * 60)
 print(f"\n📦 TensorFlow Version: {tf.__version__}")
 
 # Check GPU devices
-print(f"\n🔍 Searching for GPU devices...")
-gpus = tf.config.list_physical_devices('GPU')
+print("\n🔍 Searching for GPU devices...")
+gpus = tf.config.list_physical_devices("GPU")
 
 if gpus:
     print(f"✅ GPU DETECTED: {len(gpus)} device(s) found!\n")
@@ -30,11 +33,11 @@ if gpus:
         try:
             gpu_details = tf.config.experimental.get_device_details(gpu)
             print(f"  Details: {gpu_details}")
-        except:
-            print(f"  Details: Not available")
+        except Exception:
+            print("  Details: Not available")
 
     # Test GPU memory growth
-    print(f"\n🔧 Testing GPU memory configuration...")
+    print("\n🔧 Testing GPU memory configuration...")
     try:
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
@@ -43,22 +46,22 @@ if gpus:
         print(f"⚠️ Could not enable memory growth: {e}")
 
     # Test GPU computation
-    print(f"\n🧪 Testing GPU computation...")
+    print("\n🧪 Testing GPU computation...")
     try:
-        with tf.device('/GPU:0'):
+        with tf.device("/GPU:0"):
             # Create tensors
             a = tf.constant([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
             b = tf.constant([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
             c = tf.matmul(a, b)
 
-            print(f"✅ GPU computation successful!")
+            print("✅ GPU computation successful!")
             print(f"   Matrix multiplication result shape: {c.shape}")
             print(f"   Result:\n{c.numpy()}")
     except Exception as e:
         print(f"❌ GPU computation failed: {e}")
 
     # CUDA and cuDNN versions
-    print(f"\n📚 Library Versions:")
+    print("\n📚 Library Versions:")
     print(f"  CUDA: {tf.sysconfig.get_build_info().get('cuda_version', 'Unknown')}")
     print(f"  cuDNN: {tf.sysconfig.get_build_info().get('cudnn_version', 'Unknown')}")
 
@@ -78,7 +81,7 @@ else:
     print("  3. CUDA version mismatch (need CUDA 11.8 for TF 2.15)")
     print("  4. Environment variables not set")
     print("\nCurrent system info:")
-    print(f"  Build configuration:")
+    print("  Build configuration:")
     for key, value in tf.sysconfig.get_build_info().items():
         print(f"    {key}: {value}")
 
@@ -91,15 +94,14 @@ else:
     print("=" * 60)
 
 # Test inference speed
-print(f"\n⏱️ Testing inference speed...")
-import time
+print("\n⏱️ Testing inference speed...")
 
 # Warm up
 for _ in range(5):
     tf.random.normal([100, 100])
 
 # Benchmark
-device = '/GPU:0' if gpus else '/CPU:0'
+device = "/GPU:0" if gpus else "/CPU:0"
 iterations = 100
 
 start = time.time()

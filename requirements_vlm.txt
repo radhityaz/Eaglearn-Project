@@ -1,0 +1,9 @@
+# Additional requirements for VLM support
+# SmolVLM 2 with 4-bit quantization
+transformers>=4.36.0
+torch>=2.0.0
+accelerate>=0.21.0
+bitsandbytes>=0.39.0
+
+# For CPU optimization (optional)
+# optimum>=1.14.0  # For better CPU performance

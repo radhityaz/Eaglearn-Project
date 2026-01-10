@@ -1,6 +1,7 @@
 """
 Test Webcam Processor - Direct test without Flask
 """
+
 import sys
 import time
 from app import state, webcam
@@ -24,7 +25,9 @@ print("-" * 60)
 
 for i in range(5):
     time.sleep(1)
-    print(f"   Second {i+1}: FPS={state.fps:.1f}, Face={state.face_detected}, Focus={state.focus_percentage:.0f}%")
+    print(
+        f"   Second {i + 1}: FPS={state.fps:.1f}, Face={state.face_detected}, Focus={state.focus_percentage:.0f}%"
+    )
 
 print("-" * 60)
 

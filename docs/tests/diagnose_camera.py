@@ -5,7 +5,6 @@ Helps identify why the camera feed isn't working in the application
 
 import sys
 import cv2
-import numpy as np
 from config_loader import config
 
 print("=" * 60)
@@ -20,13 +19,9 @@ print(f"   FPS: {config.camera_fps}")
 
 # Test 2: Try opening camera with configured backend
 print("\n2. Testing camera with configured backend...")
-backend_map = {
-    'dshow': cv2.CAP_DSHOW,
-    'default': 0,
-    'v4l2': cv2.CAP_V4L2
-}
+backend_map = {"dshow": cv2.CAP_DSHOW, "default": 0, "v4l2": cv2.CAP_V4L2}
 
-backend = config.get('camera', 'backend', default='dshow')
+backend = config.get("camera", "backend", default="dshow")
 cap_backend = backend_map.get(backend, 0)
 
 print(f"   Opening with backend: {backend} (code: {cap_backend})")
@@ -59,7 +54,9 @@ actual_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 actual_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 actual_fps = int(cap.get(cv2.CAP_PROP_FPS))
 
-print(f"   Requested: {config.camera_width}x{config.camera_height} @ {config.camera_fps}fps")
+print(
+    f"   Requested: {config.camera_width}x{config.camera_height} @ {config.camera_fps}fps"
+)
 print(f"   Actual: {actual_width}x{actual_height} @ {actual_fps}fps")
 
 # Test 4: Read multiple frames
@@ -72,7 +69,7 @@ for i in range(10):
         if i == 0:
             print(f"   Frame 1: {frame.shape} - ✅")
     else:
-        print(f"   Frame {i+1}: ❌ Failed to read")
+        print(f"   Frame {i + 1}: ❌ Failed to read")
 
 print(f"   Success rate: {success_count}/10")
 
@@ -87,7 +84,7 @@ if ret and frame is not None:
     print("   ✅ Frame processing working")
 
     # Save a test frame
-    cv2.imwrite('test_camera_frame.jpg', frame)
+    cv2.imwrite("test_camera_frame.jpg", frame)
     print("   ✅ Test frame saved as 'test_camera_frame.jpg'")
 else:
     print("   ❌ Cannot test frame processing")
@@ -96,11 +93,13 @@ else:
 print("\n6. Testing ImprovedWebcamProcessor import...")
 try:
     from improved_webcam_processor import ImprovedWebcamProcessor
+
     print("   ✅ ImprovedWebcamProcessor imported successfully")
 
     # Test initialization
     print("\n7. Testing ImprovedWebcamProcessor initialization...")
     from app import SessionState
+
     state = SessionState()
     processor = ImprovedWebcamProcessor(state)
     print("   ✅ ImprovedWebcamProcessor initialized")
@@ -110,6 +109,7 @@ try:
     if processor.start():
         print("   ✅ Processor started successfully")
         import time
+
         time.sleep(2)  # Let it run for 2 seconds
 
         # Check if it's still running
@@ -127,6 +127,7 @@ try:
 except Exception as e:
     print(f"   ❌ Error: {e}")
     import traceback
+
     traceback.print_exc()
 
 # Cleanup

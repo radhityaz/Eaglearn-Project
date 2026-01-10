@@ -1,6 +1,7 @@
 """
 Simple test to verify webcam works
 """
+
 import sys
 import time
 import cv2
@@ -25,9 +26,9 @@ print("\n2. Reading 5 frames...", flush=True)
 for i in range(5):
     ret, frame = cap.read()
     if ret:
-        print(f"   Frame {i+1}: {frame.shape}", flush=True)
+        print(f"   Frame {i + 1}: {frame.shape}", flush=True)
     else:
-        print(f"   Frame {i+1}: FAILED to read", flush=True)
+        print(f"   Frame {i + 1}: FAILED to read", flush=True)
     time.sleep(0.5)
 
 cap.release()

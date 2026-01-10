@@ -39,6 +39,8 @@ venv/
 ENV/
 env/
 .venv/
+.venv_gpu/
+.venv*/
 
 # Unit test / coverage
 htmlcov/
@@ -168,6 +170,13 @@ Thumbs.db
 # IDE / Editor
 # ====================
 
+# Trae IDE
+.trae/
+
+# Claude Code local settings
+.claude/
+
+
 # Visual Studio Code
 .vscode/*
 !.vscode/settings.json
@@ -255,6 +264,8 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 *.lnk
+nul
+NUL
 
 # macOS
 .DS_Store
@@ -302,14 +313,22 @@ benchmarks/results/
 # Cache folders
 .cache/
 cache/
+.ruff_cache/
+.mypy_cache/
 
 # Session recordings (privacy)
 recordings/
+
+# User calibration outputs (keep default template)
+calibrations/*.json
+!calibrations/default.json
 
 # But keep these
 !.gitkeep
 !README.md
 !requirements.txt
 !package.json
-!package-lock.jsonFER_POSTER/
-.venv_gpu/
+!package-lock.json
+
+# Third-party repos / heavyweight dirs
+FER_POSTER/

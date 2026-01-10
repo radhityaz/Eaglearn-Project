@@ -1,203 +1,105 @@
 # Eaglearn
 
-Real-time focus monitoring system with emotion detection and eye tracking.
+Eaglearn adalah sistem monitoring fokus real-time untuk aktivitas belajar/kerja berbasis webcam (gaze, head pose, micro-expressions, posture, dan emotion) dengan UI live.
 
-## Features
+## Use Case
 
-- **Real-time Face & Pose Detection** using MediaPipe
-- **Emotion Recognition** using DeepFace (93% accuracy) and EfficientNet (87% accuracy)
-- **Eye Tracking & Gaze Estimation** with iris refinement
-- **Focus Score Calculation** based on head pose, eye state, and body posture
-- **Distraction Detection** with detailed explanations
-- **Privacy Controls** - pause/resume processing
-- **Adaptive Performance** - automatically adjusts processing quality based on FPS
+- Belajar mandiri: deteksi distraksi, drowsiness, dan pola fokus
+- Kelas daring: observasi engagement secara non-intrusif
+- Deep work: pantau fokus dan mental effort selama sesi
 
-## Quick Start
+## Fitur Utama
 
-### Installation
+- Face & eye tracking (MediaPipe FaceMesh + iris)
+- Head pose (yaw/pitch/roll) + rule-based stress/confusion/drowsiness
+- Focus score + time tracking (focused/unfocused time)
+- Calibration gaze (wizard) + kompensasi head pose sederhana
+- Logging metrik sesi (JSONL) + tombol “Simpan Log”
+- Mode pause (privacy)
 
-```bash
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+## Arsitektur (Ringkas)
 
-# Install dependencies
-pip install -r requirements.txt
+```text
+Browser UI (templates/index.html)
+  ├─ WebSocket: state_update + frame_update
+  └─ REST: /api/session/*, /api/state, /api/environment, /api/logs/*
+
+Flask + SocketIO (app.py)
+  └─ ImprovedWebcamProcessor (improved_webcam_processor.py)
+      ├─ FaceMeshProcessor (mediapipe_processors/face_mesh_processor.py)
+      ├─ PoseProcessor (mediapipe_processors/pose_processor.py)
+      ├─ DeepFaceEmotionDetector (mediapipe_processors/deepface_emotion_detector.py)
+      └─ CalibrationManager (calibration.py)
 ```
 
-### Running the Application
+## Quick Start (Windows)
 
-```bash
-python app.py
+Skenario pre-release beta memakai `.venv_gpu` untuk menghindari mismatch environment.
+
+```powershell
+.\run_eaglearn.bat
 ```
 
-The application will start on `http://localhost:8080`
+Aplikasi berjalan di:
+- Web: `http://localhost:8080`
 
-## Architecture
+## Instalasi Lengkap
 
-```
-Eaglearn-Project/
-├── app.py                          # Main Flask application
-├── config.yaml                     # Configuration file
-├── config_loader.py                # Configuration manager
-├── calibration.py                  # User calibration system
-├── improved_webcam_processor.py    # Modular webcam processor
-├── mediapipe_processors/           # Modular ML processors
-│   ├── face_mesh_processor.py      # Face & eye tracking
-│   ├── pose_processor.py           # Body pose detection
-│   ├── deepface_emotion_detector.py # Emotion detection (93%)
-│   ├── efficientnet_emotion_detector.py # Fallback emotion detection (87%)
-│   └── poster_emotion_detector.py  # POSTER++ detector (90%, optional)
-├── templates/                      # HTML templates
-│   └── index.html
-└── calibrations/                   # User calibration data
-```
+Lihat [INSTALL.md](file:///d:/Eaglearn-Project/INSTALL.md).
 
-## Configuration
+## Konfigurasi
 
-Edit `config.yaml` to customize:
+- Konfigurasi utama: [config.yaml](file:///d:/Eaglearn-Project/config.yaml)
+- Contoh env: [.env.example](file:///d:/Eaglearn-Project/.env.example)
 
-```yaml
-camera:
-  width: 640
-  height: 480
-  fps: 30
-  backend: dshow  # dshow (Windows) or v4l2 (Linux)
+## API (Ringkas)
 
-performance:
-  frame_skip_base: 3        # Process every Nth frame
-  adaptive_quality:
-    enabled: true           # Auto-adjust quality based on FPS
-    target_fps: 25
+- `POST /api/session/start`
+- `POST /api/session/stop`
+- `GET /api/state`
+- `GET /api/environment`
+- `GET /api/logs/metrics/download`
 
-emotion:
-  detector: "deepface"      # Primary emotion detector
-  confidence_threshold: 0.25
+WebSocket:
+- `state_update`
+- `frame_update`
 
-privacy:
-  allow_pause: true         # Allow privacy mode
-  local_processing_only: true
+## Panduan Darurat (Troubleshooting Flow)
+
+```text
+UI tidak update?
+  ├─ cek env indicator: GPU/torch/VLM/py
+  ├─ reload halaman
+  ├─ cek camera: izin kamera + device index
+  └─ lihat logs/app_YYYYMMDD.log
+
+Kamera hitam?
+  ├─ ganti backend camera: dshow/default
+  ├─ tutup aplikasi lain yang pakai webcam
+  └─ restart aplikasi
+
+FPS rendah?
+  ├─ turunkan resolusi kamera
+  ├─ naikkan frame_skip_base
+  └─ pastikan jalan pakai .venv_gpu
 ```
 
-## Emotion Detection
+Troubleshooting lengkap: [docs/TROUBLESHOOTING.md](file:///d:/Eaglearn-Project/docs/TROUBLESHOOTING.md)
 
-### Priority Order
+Dokumen operasional VLM: [docs/VLM_OPERATIONAL.md](file:///d:/Eaglearn-Project/docs/VLM_OPERATIONAL.md)
 
-1. **DeepFace** (93% accurate)
-   - Model: VGG-Face + Emotion weights
-   - Detector: RetinaFace
-   - Speed: 10-15 FPS (GPU accelerated)
+## Known Issues (Beta)
 
-2. **EfficientNet-B3** (87% accurate)
-   - Model: PyTorch EfficientNet-B3
-   - Source: Official torchvision
-   - Speed: 50-60 FPS (faster)
+- TensorFlow GPU di Windows sering tidak tersedia (gpus: `[]`), sementara PyTorch CUDA tetap bisa aktif.
+- VLM bersifat opsional dan membutuhkan dependency tambahan (`transformers`).
 
-3. **POSTER++** (90% accurate, optional)
-   - Model: SOTA 2024 emotion detector
-   - Requires: Google Drive download
-   - See: `setup_poster++.md`
+## Kontribusi
 
-### Emotions Detected
+- PR dan issue diterima. Sertakan langkah reproduksi, log, dan spesifikasi perangkat.
 
-- Happy
-- Sad
-- Angry
-- Surprised
-- Neutral
-- Drowsy (rule-based)
-- Confused (rule-based)
-- Stressed (rule-based)
+## Lisensi
 
-## Performance Optimization
-
-### Adaptive Quality
-
-The system automatically adjusts processing quality based on current FPS:
-
-- **High FPS (>30)**: Increases frame skip for better performance
-- **Low FPS (<20)**: Decreases frame skip for better accuracy
-
-### Frame Skipping
-
-- **Face & Eye Tracking**: Every frame
-- **Pose Detection**: Every 6th frame
-- **Emotion Detection**: Every 10th frame
-- **Frame Emission**: Every 3rd frame
-
-## API Endpoints
-
-### Session Management
-
-- `POST /api/session/start` - Start monitoring session
-- `POST /api/session/stop` - Stop monitoring session
-- `GET /api/state` - Get current application state
-- `GET /api/metrics` - Get current metrics
-
-### Calibration
-
-- `POST /api/calibration/start` - Start calibration
-- `POST /api/calibration/add-point` - Add calibration point
-- `POST /api/calibration/calculate` - Calculate calibration
-- `GET /api/calibration/status` - Get calibration status
-
-### Configuration
-
-- `GET /api/config` - Get current configuration
-- `POST /api/config/reload` - Reload configuration
-
-### WebSocket Events
-
-- `connect` - Client connected
-- `disconnect` - Client disconnected
-- `frame_update` - Frame + state data
-- `calibration_start` - Start calibration
-- `calibration_complete` - Save calibration data
-
-## Focus Scoring
-
-The focus score (0-100) is calculated from:
-
-1. **Face Detection** (30 points) - Face must be visible
-2. **Eye Aspect Ratio** (20 points) - Eyes must be open
-3. **Head Pose** (25 points) - Must look at screen
-4. **Body Posture** (15 points) - Upright posture
-5. **Mouth Aspect Ratio** (10 points) - Not yawning
-
-### Status Thresholds
-
-- **Focused**: ≥80 points
-- **Distracted**: 50-79 points
-- **Drowsy**: <50 points
-
-## Troubleshooting
-
-### Webcam Issues
-
-**Problem**: Black screen or camera not opening
-
-**Solution**:
-- Check camera backend in `config.yaml`
-- Windows: Use `dshow`
-- Linux: Use `v4l2`
-
-### Low FPS
-
-**Problem**: Laggy video, FPS < 20
-
-**Solution**:
-- Increase `frame_skip_base` in config
-- Disable pose detection if not needed
-- Lower camera resolution
-- Use GPU acceleration (requires CUDA)
-
-### Emotion Detection Not Working
-
-**Problem**: Always shows "neutral"
-
-**Solution**:
-- Check if DeepFace is installed: `pip show deepface`
-- Install TensorFlow: `pip install tensorflow tf-keras`
+Lihat [LICENSE](file:///d:/Eaglearn-Project/LICENSE).
 - Check confidence threshold in config
 - See logs for error messages
 

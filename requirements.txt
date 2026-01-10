@@ -7,14 +7,14 @@
 
 # Web Framework
 flask==3.0.0                      # Lightweight web framework
-flask-cors==4.0.0                 # CORS support
+flask-cors==6.0.0                 # CORS support (security fixes)
 flask-socketio==5.3.5             # WebSocket support
-python-socketio==5.10.0           # SocketIO protocol
+python-socketio==5.14.0           # SocketIO protocol (security fixes)
 
 # Computer Vision
 opencv-python==4.8.1.78           # Webcam capture & image processing
 mediapipe==0.10.8                 # Face & pose detection
-pillow==10.1.0                    # Image processing
+pillow==10.3.0                    # Image processing (security fixes)
 
 # Data Processing
 numpy<2.0,>=1.24.0                # Numerical computing (pinned to 1.x)
@@ -31,6 +31,7 @@ python-dotenv==1.0.0              # Environment variables
 deepface==0.0.79                  # Emotion detection
 tf-keras==2.15.0                  # Required for DeepFace
 tensorflow==2.15.0                # DeepFace backend (CPU version)
+werkzeug==3.1.5                   # WSGI toolkit (security fixes)
 
 # EfficientNet (Fallback - 87% accurate)
 torch>=2.0.0                      # PyTorch (EfficientNet)
@@ -42,6 +43,10 @@ torchvision>=0.15.0               # PyTorch vision models
 # ============================================================================
 # OPTIONAL DEPENDENCIES
 # ============================================================================
+
+# Desktop Application (WebView2)
+# pywebview[cef]>=6.1             # Desktop wrapper with Chromium
+# pywin32>=311                    # Windows integration
 
 # GPU Acceleration (uncomment if CUDA available)
 # onnxruntime-gpu==1.16.3         # GPU acceleration for ONNX models

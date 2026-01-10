@@ -62,12 +62,46 @@ performance:
     stability_threshold: 0.8  # Only process when face stable
     confidence_threshold: 0.7  # Minimum confidence
 
+vlm:
+  enabled: false
+  model_name: HuggingFaceTB/SmolVLM-500M-Instruct
+  async_load: true
+  warmup: true
+  min_fps_to_run: 12
+  min_free_vram_mb: 512
+  analysis_cooldown_seconds: 5
+  cooldown_on_skip_seconds: 5
+  readiness_retry:
+    enabled: true
+    initial_seconds: 10
+    max_seconds: 300
+    max_attempts_per_hour: 12
+
+lighting:
+  enabled: false
+  auto_brightness: true
+  target_brightness: 0.45
+  night_mode_threshold: 0.25
+  dynamic_contrast: true
+
+ui:
+  quality_preset: balanced
+  jpeg_quality: 75
+
+smartphone_detection:
+  enabled: false
+  model_path: models/smartphone_detector.onnx
+  threshold: 0.5
+  interval_frames: 10
+  visual_feedback: false
+
 # Camera Settings
 camera:
   width: 640
   height: 480
   fps: 30
   backend: dshow  # 'dshow' (Windows), 'default', 'v4l2' (Linux)
+  use_live_capture: false  # Enable live capture for streaming
 
 # Focus Algorithm Thresholds
 focus:
@@ -87,8 +121,11 @@ focus:
     mouth_aspect_ratio: 10
 
   # Status Thresholds
-  focused_threshold: 80  # Score >= 80% = focused
+  focused_threshold: 75  # Score >= 75% = focused
   distracted_threshold: 50  # Score < 50% = drowsy
+  face_mesh_max_age_seconds: 0.8
+  face_mesh_hard_fail_seconds: 2.5
+  no_face_mesh_penalty: 0.2
 
 # Eye Tracking Settings
 eye_tracking:
@@ -140,6 +177,18 @@ distractions:
   posture_poor_threshold: 40  # Percentage
   stress_high_threshold: 0.7
   confusion_high_threshold: 0.7
+  validation_min_seconds: 0.9
+  clear_grace_seconds: 1.2
+  no_face_min_seconds: 0.6
+  attention_score_threshold: 55
+  eye_closed_seconds: 0.6
+  head_roll_threshold: 18
+  posture_min_seconds: 1.5
+  smartphone_min_seconds: 0.4
+  include_affect_signals: false
+  affect_min_seconds: 2.0
+  event_log_cooldown_seconds: 1.0
+  face_mesh_max_age_seconds: 0.8
 
 # Calibration Settings
 calibration:
@@ -174,4 +223,10 @@ ui:
     enabled: true
     show_gaze_point: true
     show_face_mesh: false  # Disabled for performance
+    face_mesh_alpha: 0.5
+    face_mesh_smoothing: 0.35
+    face_mesh_mode: full
+    face_mesh_stride: 4
+    face_mesh_triangles_every_n_frames: 3
+    face_mesh_triangles_max_points: 140
     show_skeleton: false  # Disabled for performance

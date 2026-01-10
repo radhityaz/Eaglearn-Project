@@ -9,7 +9,6 @@ Verifies:
 
 import cv2
 import time
-import numpy as np
 from collections import deque
 
 print("=" * 60)
@@ -31,17 +30,19 @@ if not cap.isOpened():
 
 print("✅ Camera opened successfully")
 print(f"   Backend: {'DirectShow' if backend == cv2.CAP_DSHOW else 'Default'}")
-print(f"   Resolution: {int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))}x{int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))}")
+print(
+    f"   Resolution: {int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))}x{int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))}"
+)
 print()
 
 # Initialize MediaPipe Face Detection
 print("🔷 Step 2: Initializing Face Detection...")
 try:
     import mediapipe as mp
+
     mp_face_detection = mp.solutions.face_detection
     face_detection = mp_face_detection.FaceDetection(
-        model_selection=0,
-        min_detection_confidence=0.5
+        model_selection=0, min_detection_confidence=0.5
     )
     print("✅ MediaPipe Face Detection initialized")
 except Exception as e:
@@ -54,6 +55,7 @@ print()
 print("🔷 Step 3: Initializing DeepFace Emotion Detection...")
 try:
     from deepface import DeepFace
+
     print("✅ DeepFace imported")
     print("⚠️  Note: Model will load on first emotion detection (may take 5-10s)")
 except Exception as e:
@@ -114,34 +116,49 @@ try:
 
         # Emotion detection (throttled)
         current_time = time.time()
-        if (DeepFace is not None and
-            face_detected_this_frame and
-            current_time - last_emotion_time > emotion_interval):
-
+        if (
+            DeepFace is not None
+            and face_detected_this_frame
+            and current_time - last_emotion_time > emotion_interval
+        ):
             try:
                 # Use SSD backend for CPU (faster)
                 result = DeepFace.analyze(
                     frame_rgb,
-                    actions=['emotion'],
+                    actions=["emotion"],
                     enforce_detection=False,
-                    detector_backend='ssd'  # CPU-optimized
+                    detector_backend="ssd",  # CPU-optimized
                 )
 
                 if isinstance(result, list):
                     result = result[0]
 
-                emotion = result.get('dominant_emotion', 'neutral')
-                confidence = result.get('emotion', {}).get(emotion, 0) / 100.0
+                emotion = result.get("dominant_emotion", "neutral")
+                confidence = result.get("emotion", {}).get(emotion, 0) / 100.0
 
                 emotion_detected_count += 1
                 emotion_results.append((emotion, confidence))
                 last_emotion_time = current_time
 
                 # Display emotion
-                cv2.putText(frame, f"Emotion: {emotion}", (10, 90),
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
-                cv2.putText(frame, f"Confidence: {confidence:.0%}", (10, 115),
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+                cv2.putText(
+                    frame,
+                    f"Emotion: {emotion}",
+                    (10, 90),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    (255, 255, 0),
+                    2,
+                )
+                cv2.putText(
+                    frame,
+                    f"Confidence: {confidence:.0%}",
+                    (10, 115),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.6,
+                    (255, 255, 0),
+                    2,
+                )
 
                 print(f"   🎭 Emotion: {emotion} ({confidence:.1%})")
 
@@ -154,10 +171,24 @@ try:
         fps = 1.0 / (sum(frame_times) / len(frame_times)) if frame_times else 0
 
         # Draw stats
-        cv2.putText(frame, f"FPS: {fps:.1f}", (10, 30),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-        cv2.putText(frame, f"Faces: {face_detected_count}", (10, 60),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        cv2.putText(
+            frame,
+            f"FPS: {fps:.1f}",
+            (10, 30),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 255, 0),
+            2,
+        )
+        cv2.putText(
+            frame,
+            f"Faces: {face_detected_count}",
+            (10, 60),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (0, 255, 0),
+            2,
+        )
 
         # Display frame
         cv2.imshow("Camera Feed Test", frame)
@@ -169,7 +200,7 @@ try:
             break
 
         # Check for quit
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(1) & 0xFF == ord("q"):
             print("\n⏹️  Test stopped by user")
             break
 
